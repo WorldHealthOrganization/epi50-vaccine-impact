@@ -27,13 +27,13 @@ run_external = function() {
 
   # Read in external polio results (only required once)
   read_polio()  # TODO: Remove when polio results available
-  read_ferrari()
+  read_penn_state()
 
   # Format external modelling results for EPI50 use
   format_measles()
   format_polio()
 
-  # Extract results from all extern models
+  # Extract results from all external models
   extract_extern_results()
   
   # ---- Data visualisation plots ----
@@ -261,10 +261,10 @@ simulate_dynamice = function() {
 read_polio = function() {
   
   # Check whether dummy results already exist
-  file_exist = file.exists(paste0(o$pth$extern, "epi50_polio_results.rds"))
+  results_exist = file.exists(paste0(o$pth$extern, "epi50_polio_results.rds"))
   
   # Return out if process not necessary
-  if (file_exist && o$dummy_polio == FALSE)
+  if (results_exist && o$dummy_polio == FALSE)
     return()
   
   message(" - Reading polio outcomes")
@@ -273,31 +273,40 @@ read_polio = function() {
   template_file = "template_polio_region.csv"
   read_dt = fread(paste0(o$pth$extern, template_file)) 
   
-  # Save dummy EPI50-formatted polio results
+  # Save EPI50-formatted polio results
   save_rds(read_dt, "extern", "epi50_polio_results")
 
 }
 
 # ---------------------------------------------------------
-# TEMP: Construct temporary dummy polio results
+# TEMP: Read in Ferrari's measles results
 # ---------------------------------------------------------
-dummy_polio = function() {
-  
-  # Check whether dummy results already exist
-  # dummy_exist = file.exists(paste0(o$pth$extern, "epi50_polio_results.rds"))
+read_penn_state = function() {
+ 
+  # Check whether results already exist
+   results_exist = file.exists(paste0(o$pth$extern, "epi50_penn_state_results.rds"))
   
   # Return out if process not necessary
-  #if (dummy_exist && o$dummy_polio == FALSE)
-  # return()
+  if (results_exist && o$dummy_penn_state == FALSE)
+   return()
   
-  message(" - Reading polio outcomes")
+  message(" - Reading Penn State measles outcomes")
   
-  # Load template of regional results
-  template_file = "template_polio_region.csv"
-  read_dt = fread(paste0(o$pth$extern, template_file)) 
+  # Load input files
+  no_vaccination_file = "cases_and_deaths_estimates_no_vaccination_2022.csv"
+  no_vaccines_dt = fread(paste0(o$pth$extern, no_vaccination_file)) %>%
+                     select(country, year, deaths) %>%
+                     mutate(scenario = "no_vaccine")
   
-  # Save dummy EPI50-formatted polio results
-  save_rds(read_dt, "extern", "epi50_polio_results")
+  vaccination_file = "cases_and_deaths_estimates_2022.csv"
+  vaccines_dt = fread(paste0(o$pth$extern, vaccination_file)) %>%
+                 select(country, year, deaths) %>%
+                 mutate(scenario = "vaccine")
+  
+  summary_dt = bind_rows(no_vaccines_dt, vaccines_dt) 
+  
+  # Save summary of Penn State measles results
+  save_rds(summary_dt, "extern", "epi50_penn_state_results.rds")
   
 }
 

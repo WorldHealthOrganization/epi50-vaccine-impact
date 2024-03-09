@@ -54,6 +54,7 @@ set_options = function(do_step = NA) {
   
   # Create/recreate dummy polio results
   o$dummy_polio = FALSE  # TODO: Remove when polio results are available
+  o$dummy_penn_state = FALSE  # TODO: Remove when Penn State measles results are available
   
   # Directly simulate Dynamice model
   #

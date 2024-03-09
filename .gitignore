@@ -11,3 +11,5 @@ input/wpp/WPP2022_DeathsBySingleAgeSex_Medium_1950-2021.csv
 input/wpp/WPP2022_DeathsBySingleAgeSex_Medium_2022-2100.csv
 input/wpp/WPP2022_Population1JanuaryBySingleAgeSex_Medium_1950-2021.csv
 input/wpp/WPP2022_Population1JanuaryBySingleAgeSex_Medium_2022-2100.csv
+extern/cases_and_deaths_estimates_2022.csv
+extern/cases_and_deaths_estimates_no_vaccination_2022.csv
