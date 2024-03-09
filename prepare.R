@@ -18,22 +18,25 @@ run_prepare = function() {
   message("* Preparing input data")
   
   # Convert config yaml files to datatables
-  prepare_config_tables()
+ # prepare_config_tables()
 
   # Streamline VIMC impact estimates for quick loading
-  prepare_vimc_estimates()
+  #prepare_vimc_estimates()
 
   # Parse vaccine efficacy profile for non-VIMC pathogens
-  prepare_vaccine_efficacy()
+  #prepare_vaccine_efficacy()
 
   # Prepare GBD estimates of deaths for non-VIMC pathogens
-  prepare_gbd_estimates()
+  #prepare_gbd_estimates()
 
   # Prepare GBD covariates for extrapolating to non-VIMC countries
-  prepare_gbd_covariates()
+  #prepare_gbd_covariates()
 
-  # Prepare UNICEF stunting combined estimates for imputing non-VIMC countries
+  # Prepare UNICEF covariates for imputing non-VIMC countries
   prepare_unicef()
+  
+  # Prepare World Bank covariates for imputing non-VIMC countries
+  prepare_world_bank()
 
   # Prepare Gapminder covariates for imputing non-VIMC countries
   prepare_gapminder()
@@ -374,7 +377,7 @@ prepare_gbd_covariates = function() {
 }
 
 # ---------------------------------------------------------
-# Prepare UNICEF stunting combined estimates
+# Prepare UNICEF stunting and maternal mortality estimates
 # ---------------------------------------------------------
 prepare_unicef = function() {
   
@@ -422,22 +425,148 @@ prepare_unicef = function() {
     interpolate(maternal_mortality_dt)
   
   
-  # browser()
+   #browser()
   # Create table of UNICEF covariates
   unicef_dt = stunting_dt  %>%
-    full_join(maternal_mortality_dt, by=c("country", "year"))
+    full_join(maternal_mortality_dt, by=c("country", "year")) %>%
+    filter(!is.na(year))
   
-  
-  # Check for UNICEF countries not linked to WHO regions
-  #unicef_dt %>% filter(is.na(region_short)) %>%
-  #  select(country, region_short) %>%
-  #  unique()
-  
-  #unicef_dt = unicef_dt %>%
-  # filter(!is.na(region_short))
   
   # Save in tables cache
   save_table(unicef_dt, "unicef_covariates")
+}
+
+# ---------------------------------------------------------
+# Prepare World Bank literacy estimates
+# ---------------------------------------------------------
+prepare_world_bank = function() {
+  
+  message(" - World Bank")
+ 
+  # Read in WHO region data
+  WHO_regions_dt = fread(paste0(o$pth$input, "WHO_country_codes.csv")) 
+  
+  # Read in World Bank literacy data
+  male_adult_literacy_dt = fread(paste0(o$pth$input, "literacy_male.csv"), header= TRUE) %>% 
+    select(-c('Country Name', 'Indicator Name', 'Indicator Code')) %>% 
+    pivot_longer(cols = -'Country Code',
+                 names_to = "year",
+                 values_to = "male_adult_literacy") %>% 
+    rename(country_code = 'Country Code') %>%
+    full_join(WHO_regions_dt, by="country_code", relationship = "many-to-many") %>%
+    select(-c(country, region_no, region_long)) %>%
+    rename(country = country_code) %>%
+    filter(year != 'V68' & !is.na(year)) %>%
+    mutate(year = as.integer(year)) %>%
+    unique() %>% # remove duplicates for COD and TZN
+    complete(country, year = 1974:2024, 
+             fill = list(male_adult_literacy = NA)) %>%
+    as_tsibble(index = year,
+               key = country) 
+  
+  # Interpolate missing values
+  male_adult_literacy_dt = male_adult_literacy_dt %>%
+    # Omit countries with no data
+    group_by(country) %>%
+    filter(!all(is.na(male_adult_literacy))) %>% 
+    ungroup() %>%
+    # Fit time series linear regression model
+    model(lm = TSLM(log(male_adult_literacy) ~ trend())) %>%
+    interpolate(male_adult_literacy_dt)
+  
+  # Read in World Bank literacy data
+  female_adult_literacy_dt = fread(paste0(o$pth$input, "literacy_female.csv"), header= TRUE) %>% 
+    select(-c('Country Name', 'Indicator Name', 'Indicator Code')) %>% 
+    pivot_longer(cols = -'Country Code',
+                 names_to = "year",
+                 values_to = "female_adult_literacy") %>% 
+    rename(country_code = 'Country Code') %>%
+    full_join(WHO_regions_dt, by="country_code", relationship = "many-to-many") %>%
+    select(-c(country, region_no, region_long)) %>%
+    rename(country = country_code) %>%
+    filter(year != 'V68' & !is.na(year)) %>%
+    mutate(year = as.integer(year)) %>%
+    unique() %>% # remove duplicates for COD and TZN
+    complete(country, year = 1974:2024, 
+             fill = list(female_adult_literacy = NA)) %>%
+    as_tsibble(index = year,
+               key = country) 
+  
+  # Interpolate missing values
+  female_adult_literacy_dt = female_adult_literacy_dt %>%
+    # Omit countries with no data
+    group_by(country) %>%
+    filter(!all(is.na(female_adult_literacy))) %>% 
+    ungroup() %>%
+    # Fit time series linear regression model
+    model(lm = TSLM(log(female_adult_literacy) ~ trend())) %>%
+    interpolate(female_adult_literacy_dt)
+  
+  # Read in World Bank literacy data
+  male_youth_literacy_dt = fread(paste0(o$pth$input, "literacy_male_15_24.csv"), header= TRUE) %>% 
+    select(-c('Country Name', 'Indicator Name', 'Indicator Code')) %>% 
+    pivot_longer(cols = -'Country Code',
+                 names_to = "year",
+                 values_to = "male_youth_literacy") %>% 
+    rename(country_code = 'Country Code') %>%
+    full_join(WHO_regions_dt, by="country_code", relationship = "many-to-many") %>%
+    select(-c(country, region_no, region_long)) %>%
+    rename(country = country_code) %>%
+    filter(year != 'V68' & !is.na(year)) %>%
+    mutate(year = as.integer(year)) %>%
+    unique() %>% # remove duplicates for COD and TZN
+    complete(country, year = 1974:2024, 
+             fill = list(male_youth_literacy = NA)) %>%
+    as_tsibble(index = year,
+               key = country) 
+  
+  # Interpolate missing values
+  male_youth_literacy_dt = male_youth_literacy_dt %>%
+    # Omit countries with no data
+    group_by(country) %>%
+    filter(!all(is.na(male_youth_literacy))) %>% 
+    ungroup() %>%
+    # Fit time series linear regression model
+    model(lm = TSLM(log(male_youth_literacy) ~ trend())) %>%
+    interpolate(male_youth_literacy_dt)
+  
+  # Read in World Bank literacy data
+  female_youth_literacy_dt = fread(paste0(o$pth$input, "literacy_female_15_24.csv"), header= TRUE) %>% 
+    select(-c('Country Name', 'Indicator Name', 'Indicator Code')) %>% 
+    pivot_longer(cols = -'Country Code',
+                 names_to = "year",
+                 values_to = "female_youth_literacy") %>% 
+    rename(country_code = 'Country Code') %>%
+    full_join(WHO_regions_dt, by="country_code", relationship = "many-to-many") %>%
+    select(-c(country, region_no, region_long)) %>%
+    rename(country = country_code) %>%
+    filter(year != 'V68' & !is.na(year)) %>%
+    mutate(year = as.integer(year)) %>%
+    unique() %>% # remove duplicates for COD and TZN
+    complete(country, year = 1974:2024, 
+             fill = list(female_youth_literacy = NA)) %>%
+    as_tsibble(index = year,
+               key = country) 
+  
+  # Interpolate missing values
+  female_youth_literacy_dt = female_youth_literacy_dt %>%
+    # Omit countries with no data
+    group_by(country) %>%
+    filter(!all(is.na(female_youth_literacy))) %>% 
+    ungroup() %>%
+    # Fit time series linear regression model
+    model(lm = TSLM(log(female_youth_literacy) ~ trend())) %>%
+    interpolate(female_youth_literacy_dt)
+  
+
+  # Create table of World Bank covariates
+  world_bank_dt = male_adult_literacy_dt  %>%
+    full_join(male_youth_literacy_dt, by=c("country", "year")) %>%
+    full_join(female_adult_literacy_dt, by=c("country", "year")) %>%
+    full_join(female_youth_literacy_dt, by=c("country", "year"))
+  
+  # Save in tables cache
+  save_table(world_bank_dt, "world_bank_covariates")
 }
 
 # ---------------------------------------------------------
@@ -456,26 +585,23 @@ prepare_gapminder = function() {
   # Gini coefficient
   gini_dt = fread(paste0(o$pth$input, "ddf--datapoints--gapminder_gini--by--geo--time.csv")) %>%
     rename(gini = gapminder_gini)
-  
+
   # GPD per capita US$ inflation-adjusted
   gdp_dt = fread(paste0(o$pth$input, "ddf--datapoints--gdppercapita_us_inflation_adjusted--by--geo--time.csv")) %>%
     rename(gdp = gdppercapita_us_inflation_adjusted)
   
-  # Literacy rate (female) aged 15+ years
-  literacy_female_15_dt = fread(paste0(o$pth$input, "ddf--datapoints--literacy_rate_adult_female_percent_of_females_ages_15_above--by--geo--time.csv")) %>%
-    rename(lit_female = literacy_rate_adult_female_percent_of_females_ages_15_above)
-  
-  # Literacy rate (male) aged 15+ years
-  literacy_male_15_dt = fread(paste0(o$pth$input, "ddf--datapoints--literacy_rate_adult_male_percent_of_males_ages_15_and_above--by--geo--time.csv")) %>%
-    rename(lit_male = literacy_rate_adult_male_percent_of_males_ages_15_and_above)
-  
   # Doctors per 1000 population
   doctors_per_1000_dt = fread(paste0(o$pth$input, "ddf--datapoints--medical_doctors_per_1000_people--by--geo--time.csv")) %>%
-    rename(doctors_per_1000 = medical_doctors_per_1000_people)
+    rename(doctors_per_1000 = medical_doctors_per_1000_people) %>%
+    complete(geo, time = 1970:2024, 
+             fill = list(doctors_per_1000 = NA)) %>%
+    as_tsibble(index = time, 
+               key = geo) 
   
-  # Underweight children
-  underweight_children_dt = fread(paste0(o$pth$input, "ddf--datapoints--underweight_children--by--geo--time.csv")) %>%
-    rename(underwt_children = underweight_children)
+  # Interpolate missing values
+  doctors_per_1000_dt = doctors_per_1000_dt %>%
+    model(lm = TSLM(log(doctors_per_1000) ~ trend())) %>%
+    interpolate(doctors_per_1000_dt)
   
   # Population aged 0 to 14
   pop_0_to_14_dt = fread(paste0(o$pth$input, "ddf--datapoints--population_aged_0_14_years_both_sexes_percent--by--geo--time.csv")) %>%
@@ -489,37 +615,63 @@ prepare_gapminder = function() {
   urban_dt = fread(paste0(o$pth$input, "ddf--datapoints--urban_population_percent_of_total--by--geo--time.csv")) %>%
     rename(urban_percent = urban_population_percent_of_total)
   
-  # Rural poverty (% rural people below poverty line)
-  rural_poverty_dt = fread(paste0(o$pth$input, "ddf--datapoints--rural_poverty_percent_rural_people_below_national_rural--by--geo--time.csv")) %>%
-    rename(rural_poverty = rural_poverty_percent_rural_people_below_national_rural)
-  
-  # HIV prevalence
-  hiv_prev_dt = fread(paste0(o$pth$input, "ddf--datapoints--adults_with_hiv_percent_age_15_49--by--geo--time.csv")) %>%
-    rename(hiv_prev = adults_with_hiv_percent_age_15_49)
-  
   # HIV mortality
   hiv_mortality_dt = fread(paste0(o$pth$input, "ddf--datapoints--annual_hiv_deaths_number_all_ages--by--geo--time.csv")) %>%
     rename(hiv_mortality = annual_hiv_deaths_number_all_ages)
   
-  # Maternal mortality
-  maternal_mortality_dt = fread(paste0(o$pth$input, "ddf--datapoints--maternal_mortality_ratio_who--by--geo--time.csv")) %>%
-    rename(maternal_mortality = maternal_mortality_ratio_who)
-  
-  # Health spending ($)
+   # Health spending ($)
   health_spending_dt = fread(paste0(o$pth$input, "ddf--datapoints--total_health_spending_per_person_us--by--geo--time.csv")) %>%
-    rename(health_spending = total_health_spending_per_person_us)
+    rename(health_spending = total_health_spending_per_person_us) %>%
+    complete(geo, time = 1970:2024, 
+             fill = list(health_spending = NA)) %>%
+    as_tsibble(index = time, 
+               key = geo) 
+  
+  # Interpolate missing values
+  health_spending_dt = health_spending_dt %>%
+    model(lm = TSLM(log(health_spending) ~ trend())) %>%
+    interpolate(health_spending_dt)
   
   # Private health spending (%)
   private_health_spending_dt = fread(paste0(o$pth$input, "ddf--datapoints--private_share_of_total_health_spending_percent--by--geo--time.csv")) %>%
-    rename(private_health = private_share_of_total_health_spending_percent)
+    rename(private_health = private_share_of_total_health_spending_percent) %>%
+    complete(geo, time = 1970:2024, 
+             fill = list(private_health = NA)) %>%
+    as_tsibble(index = time, 
+               key = geo) 
+  
+  # Interpolate missing values
+  private_health_spending_dt = private_health_spending_dt %>%
+    model(lm = TSLM(log(private_health) ~ trend())) %>%
+    interpolate(private_health_spending_dt)
   
   # At least basic sanitation (%)
   sanitation_dt = fread(paste0(o$pth$input, "ddf--datapoints--at_least_basic_sanitation_overall_access_percent--by--geo--time.csv")) %>%
-    rename(basic_sanitation = at_least_basic_sanitation_overall_access_percent)
+    rename(basic_sanitation = at_least_basic_sanitation_overall_access_percent) %>%
+    complete(geo, time = 1970:2024, 
+             fill = list(basic_sanitation = NA)) %>%
+    as_tsibble(index = time, 
+               key = geo) 
+  
+  # Interpolate missing values
+  sanitation_dt = sanitation_dt %>%
+    model(lm = TSLM(log(basic_sanitation) ~ trend())) %>%
+    interpolate(sanitation_dt)
+  
   
   # At least basic water source (%)
   water_dt = fread(paste0(o$pth$input, "ddf--datapoints--at_least_basic_water_source_overall_access_percent--by--geo--time.csv")) %>%
-    rename(basic_water = at_least_basic_water_source_overall_access_percent)
+    rename(basic_water = at_least_basic_water_source_overall_access_percent) %>%
+    complete(geo, time = 1970:2024, 
+             fill = list(basic_water = NA)) %>%
+    as_tsibble(index = time, 
+               key = geo) 
+  
+  # Interpolate missing values
+  water_dt = water_dt %>%
+    model(lm = TSLM(log(basic_water) ~ trend())) %>%
+    interpolate(water_dt)
+  
   
   # Human development index (life expectancy, education, per-person income)
   hdi_dt = fread(paste0(o$pth$input, "ddf--datapoints--hdi_human_development_index--by--geo--time.csv")) %>%
@@ -527,7 +679,16 @@ prepare_gapminder = function() {
   
   # Attended births
   attended_births_dt = fread(paste0(o$pth$input, "ddf--datapoints--births_attended_by_skilled_health_staff_percent_of_total--by--geo--time.csv")) %>%
-    rename(attended_births = births_attended_by_skilled_health_staff_percent_of_total)
+    rename(attended_births = births_attended_by_skilled_health_staff_percent_of_total) %>%
+    complete(geo, time = 1990:2024, 
+             fill = list(doctors_per_1000 = NA)) %>%
+    as_tsibble(index = time, 
+               key = geo) 
+  
+  # Interpolate missing values
+  attended_births_dt = attended_births_dt %>%
+    model(lm = TSLM(log(attended_births) ~ trend())) %>%
+    interpolate(attended_births_dt)
   
   # Internet users
   internet_users_dt = fread(paste0(o$pth$input, "ddf--datapoints--internet_users--by--geo--time.csv")) 
@@ -536,20 +697,14 @@ prepare_gapminder = function() {
   # Create table of Gapminder covariates
   gapminder_dt = gini_dt %>%
     full_join(gdp_dt, by=c("geo", "time")) %>%
-    full_join(literacy_male_15_dt, by=c("geo", "time")) %>%
-    full_join(literacy_female_15_dt, by=c("geo", "time")) %>%
     full_join(doctors_per_1000_dt, by=c("geo", "time")) %>%
-    full_join(health_spending_dt, by=c("geo", "time")) %>%
-    full_join(private_health_spending_dt, by=c("geo", "time")) %>%
     full_join(pop_0_to_14_dt, by=c("geo", "time")) %>%
     full_join(pop_density_dt, by=c("geo", "time")) %>%
     full_join(urban_dt, by=c("geo", "time")) %>%
-    full_join(hiv_prev_dt, by=c("geo", "time")) %>%
     full_join(hiv_mortality_dt, by=c("geo", "time")) %>%
-    full_join(maternal_mortality_dt, by=c("geo", "time")) %>%
+    full_join(health_spending_dt, by=c("geo", "time")) %>%
+    full_join(private_health_spending_dt, by=c("geo", "time")) %>%
     full_join(internet_users_dt, by=c("geo", "time")) %>%
-    full_join(rural_poverty_dt, by=c("geo", "time")) %>%
-    full_join(underweight_children_dt, by=c("geo", "time")) %>%
     full_join(attended_births_dt, by=c("geo", "time")) %>%
     full_join(water_dt, by=c("geo", "time")) %>%
     full_join(sanitation_dt, by=c("geo", "time")) %>%
@@ -565,10 +720,11 @@ prepare_gapminder = function() {
     filter(year >= 1964 & year <= 2024)  %>%# include ten years before EPI to allow for historical effect of covariates
     as.data.table()              
   
+
   # Check for Gapminder countries not linked to WHO regions
-  gapminder_dt %>% filter(is.na(region_short)) %>%
-    select(country, region_short) %>%
-    unique()
+ # gapminder_dt %>% filter(is.na(region_short)) %>%
+#    select(country, region_short) %>%
+#    unique()
   
   gapminder_dt = gapminder_dt %>%
     filter(!is.na(region_short))

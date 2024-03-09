@@ -368,7 +368,7 @@ deaths_averted = function(disease) {
   message("  > Calculating deaths averted")
   
   # ---- Deaths averted for this disease ----
-  browser()
+  
   # Load effective coverage for this disease from file
   effective_dt = read_rds("static_d", "effective_coverage", disease)
   

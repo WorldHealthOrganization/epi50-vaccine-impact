@@ -27,6 +27,8 @@ run_regression = function(case) {
   # Load response variable (impact per FVP)
   target = get_regression_data(case)
   
+ # browser()
+  
   # Return out if no training data identified
   if (nrow(target) == 0)
     return()
@@ -39,7 +41,7 @@ run_regression = function(case) {
   #  basic_regression - IA2030 method using GBD covariates
   #  perform_regression - Helen's time series regression method
   #  perform_regression2 - Same as Helen's method, refactored code
-  method = "basic_regression"
+  method = "perform_regression2"
   
   # Which sources of public health impact are to be modelled
   if (case == "impute") use_sources = qc(vimc)
@@ -124,13 +126,28 @@ define_models = function(case) {
     cov2  = "log(coverage_minus_2)", 
     cov3  = "log(coverage_minus_3)", 
     cov4  = "log(coverage_minus_4)", 
+    doc   = "doctors_per_1000",
+    hiv   = "hiv_mortality",
+    wat   = "basic_water",
+    san   = "basic_sanitation",
     pop14 = "pop_0to14", 
-    gini  = "gini", 
+    dens  = "pop_density",
+    gini0 = "gini",
+    gini1 = "gini_minus_1", 
+    gini2 = "gini_minus_2", 
     hdi   = "HDI", 
     ab    = "attended_births", 
+    lit_m_a  = "male_adult_literacy",
+    lit_f_a  = "female_adult_literacy", 
+    lit_m_y  = "male_youth_literacy", 
+    lit_f_y  = "female_youth_literacy", 
+    phs0  = "private_health", 
+    phs1  = "private_health_minus_1", 
+    phs2  = "private_health_minus_2", 
     hs0   = "health_spending", 
     hs1   = "health_spending_minus_1", 
-    hs2   = "health_spending_minus_2")
+    hs2   = "health_spending_minus_2",
+    int   = "internet_users")
   
   # Define models (using shorthand covariate references)
   models = list(
@@ -139,17 +156,17 @@ define_models = function(case) {
     impute = list(
       m1  = "cov0", 
       m2  = "cov0 + cov1", 
-      m3  = "cov0 + cov1 + cov2", 
-      m4  = "cov0 + cov1 + cov2 + cov3", 
-      m5  = "cov0 + cov1 + cov2 + cov3 + cov4", 
-      # m6  = "cov0 + cov1 + cov2",
-      m7  = "cov0 + cov1 + cov2 + cov3 + cov4 + pop14 + gini", 
-      m8  = "cov0 + cov1 + cov2 + cov3 + cov4 + pop14 + gini + ab", 
-      # m9  = "cov0 + cov1 + cov2 + cov3 + cov4 + pop14 + gini + ab",
-      m10 = "cov0 + cov1 + cov2 + cov3 + hdi + pop14 + gini", 
-      m11 = "cov0 + cov1 + cov2 + hdi + pop14 + gini", 
-      m12 = "cov0 + cov1 + hdi + pop14 + gini", 
-      m13 = "cov0 + hdi + pop14 + gini"), 
+      m3  = "cov0 + cov1 + lit_f_a", 
+      m4  = "cov0 + cov1 + lit_m_a", 
+      m5  = "cov0 + cov1 + ab", 
+      m6  = "cov0 + cov1 + gini0",
+      m7  = "cov0 + cov1 + wat",
+      m8  = "cov0 + cov1 + pop14 + gini0 + gini1 + lit_f_a + lit_m_a + wat", 
+      m9  = "cov0 + cov1 + pop14 + gini + lit_f_a + wat",
+      m10 = "cov0 + cov1 + pop14 + gini0 + gini1 + lit_f_a + wat",
+      m11 = "cov0 + cov1 + pop14 + gini0 + gini1 + lit_f_a", 
+      m12 = "cov0 + cov1 + pop14 + gini + lit_f_a + lit_m_a",
+      m13 = "cov0 + cov1 + pop14 + gini + lit_f_a"), 
     
     # Models for inferring key drivers of impact 
     infer = list(
@@ -338,7 +355,7 @@ basic_regression = function(d_v_a_id, models, covars, target, case) {
   a = rowMins(data_mat)
   b = rowMaxs(data_mat)
   
-  # Use these min ana max values to normalise
+  # Use these min and max values to normalise
   norm_data_dt = transform_fn(data_mat, a, b)
   norm_pred_dt = transform_fn(pred_mat, a, b)
   
@@ -970,7 +987,7 @@ perform_regression2 = function(d_v_a_id, models, covars, target, case) {
   # ---- Model selection ----
   
   message("  > Model selection")
-  
+  browser()
   # For each country, select the model with the best AICc
   model_choice = model_list %>%
     lapply(report) %>%
@@ -993,11 +1010,19 @@ perform_regression2 = function(d_v_a_id, models, covars, target, case) {
              model = tslm) %>%
     suppressWarnings()
   
+  choice =  model_choice %>%
+             as_tibble() %>%
+             count(model_id) %>%
+             slice(which.max(n)) %>%
+             pull(model_id) 
+  
   # Extract parameters of best fitting model for each country
   model_fit = tidy(model_choice) %>%
     select(d_v_a_id, country, model_id, term, 
            estimate, std.error, p.value) %>%
     as.data.table()
+  
+
   
   # ---- Predictions ----
   
@@ -1006,13 +1031,13 @@ perform_regression2 = function(d_v_a_id, models, covars, target, case) {
   # Impute case: predict missing data using regional best models 
   if (case == "impute") {
     
-    # TODO: Generalise: allow model selection for imputed country by e.g. region. For now, model 13 works well in general
+    # TODO: Generalise: allow model selection for imputed country by e.g. region. 
     # TODO: Choose most appropriate method for selecting coefficients e.g. nearest neighbours
     
-    # TEMP: Use model 13 (a commonly selected model) for predictions
-    use_model = "m13"
+    # TEMP: Use most commonly chosen model for this d_v_a_id
+    use_model = choice
     
-    # Evaluate this model - see seperate function
+    # Evaluate this model - see separate function
     predict_dt = evaluate_predictions(
       id         = use_model, 
       model_list = model_list, 
@@ -1049,6 +1074,7 @@ perform_regression2 = function(d_v_a_id, models, covars, target, case) {
            .before = 1) %>%
     as.data.table()
   
+
   # Store the data used, fitted model, and result
   fit = list(
     model  = model_choice,  # NOTE: Only for non-imputed
@@ -1127,7 +1153,7 @@ append_covariates = function(d_v_a_id, models, covars, target) {
     as.data.table()
   
   # ---- Append all other covariates ----
-  
+ 
   # Create time-series tibble with all covariates
   target_ts = target %>%
     # Data for this d-v-a...
@@ -1140,9 +1166,13 @@ append_covariates = function(d_v_a_id, models, covars, target) {
     full_join(y  = table("gbd_covariates"),
               by = c("country", "year")) %>%
     # Append covariates: UNICEF...
-    # full_join(y  = table("unicef_covariates"),
-    #           by = c("country", "year"),
-    #           relationship = "many-to-many") %>%
+    full_join(y  = table("unicef_covariates"),
+              by = c("country", "year"),
+              relationship = "many-to-many") %>%
+    # Append covariates: World Bank...
+    full_join(y  = table("world_bank_covariates"),
+              by = c("country", "year"),
+              relationship = "many-to-many") %>%
     # Append covariates: Gapminder...
     full_join(y  = table("gapminder_covariates"),  # TODO: multiple entries for COD(Congo, Kinshasa)
               by = c("country", "year"), 

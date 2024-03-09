@@ -18,7 +18,7 @@ source("dependencies.R")
 message("Running EPI50 pipeline")
 
 # Set options (see options.R)
-o = set_options(do_step = c(3))
+o = set_options(do_step = c(4))
 
 # Step 1) Prepare all inputs (only needs to be done once)
 run_prepare()  # See prepare.R
