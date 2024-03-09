@@ -120,7 +120,7 @@ set_options = function(do_step = NA) {
   
   # Use multiple cores to speed up several fitting processes
   o$parallel = list(
-    impute = TRUE, 
+    impute = FALSE, 
     impact = FALSE) 
 
   # Detect number of cores available to this user

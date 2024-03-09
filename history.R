@@ -271,7 +271,7 @@ evaluate_impact_function = function(eval_dt = NULL) {
 }
 
 # ---------------------------------------------------------
-# Calulate child mortality rates in vaccine and no vaccine scenarios
+# Calculate child mortality rates in vaccine and no vaccine scenarios
 # ---------------------------------------------------------
 mortality_rates = function(age_bound = 5, grouping = "none") {
   

@@ -260,24 +260,24 @@ simulate_dynamice = function() {
 dummy_polio = function() {
   
   # Check whether dummy results already exist
-  dummy_exist = file.exists(paste0(o$pth$extern, "epi50_polio_results.rds"))
+ # dummy_exist = file.exists(paste0(o$pth$extern, "epi50_polio_results.rds"))
   
   # Return out if process not necessary
-  if (dummy_exist && o$dummy_polio == FALSE)
-    return()
+  #if (dummy_exist && o$dummy_polio == FALSE)
+   # return()
   
-  message(" - Generating dummy polio outcomes")
+  message(" - Reading polio outcomes")
   
   # Load template of regional results
   template_file = "template_polio_region.csv"
   template_dt = fread(paste0(o$pth$extern, template_file)) %>%
     select(-value)
-  
-  # All metrics of intrerest (epi outcomes and number of doses)
-  metrics = unique(template_dt$metric)
+  browser()
+  # All metrics of interest (epi outcomes and number of doses)
+ # metrics = unique(template_dt$metric)
   
   # Crudely, expect around 30k deaths per year in counterfactual scenario
-  annual_deaths = 30000
+  #annual_deaths = 30000
   
   # Split equally across regions and age groups
   counterfactual = annual_deaths / 
@@ -349,7 +349,7 @@ dummy_polio = function() {
 }
 
 # ---------------------------------------------------------
-# Format polio modelling results for EPI50 use
+# Format measles modelling results for EPI50 use
 # ---------------------------------------------------------
 format_measles = function() {
   
@@ -387,7 +387,7 @@ format_measles = function() {
     # File names for raw and formatted results
     raw_name   = paste1("epi50",  model, "results")
     table_name = paste1("extern", model, "results")
-    
+
     # Load raw results, removing any appended FVPs info
     raw_dt = read_rds("extern", raw_name) %>%
       filter(!metric %in% dose_dict)

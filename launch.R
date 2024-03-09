@@ -9,7 +9,8 @@
 ###########################################################
 
 # Set working directory to sourced file
-if (interactive()) setwd(getSrcDirectory(function() {}))
+#if (interactive()) setwd(getSrcDirectory(function() {}))
+setwd("C:\\Users\\helen\\Documents\\GitHub\\epi50-vaccine-impact")
 
 # Load all required packages and functions
 source("dependencies.R")
@@ -17,7 +18,7 @@ source("dependencies.R")
 message("Running EPI50 pipeline")
 
 # Set options (see options.R)
-o = set_options(do_step = 9)
+o = set_options(do_step = c(2))
 
 # Step 1) Prepare all inputs (only needs to be done once)
 run_prepare()  # See prepare.R

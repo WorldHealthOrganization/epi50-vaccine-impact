@@ -37,7 +37,7 @@ run_regression = function(case) {
   #
   # OPTIONS:
   #  basic_regression - IA2030 method using GBD covariates
-  #  perform_regression1 - Helen's time series regression method
+  #  perform_regression - Helen's time series regression method
   #  perform_regression2 - Same as Helen's method, refactored code
   method = "basic_regression"
   
@@ -386,6 +386,7 @@ basic_regression = function(d_v_a_id, models, covars, target, case) {
 # Perform regression (Helen's original version)
 # ---------------------------------------------------------
 perform_regression = function(d_v_a_id, models, covars, target, case) {
+  browser()
   
   # Extract name of this d-v-a
   d_v_a_name = table("d_v_a") %>%
@@ -438,8 +439,7 @@ perform_regression = function(d_v_a_id, models, covars, target, case) {
            coverage_minus_6 = lag(coverage, 6),
            coverage_minus_7 = lag(coverage, 7),
            coverage_minus_8 = lag(coverage, 8)) %>%
-    # @HCJ - assuming this next line was a typo?
-    # coverage_minus_3 = lag(coverage, 3)) %>%
+
     # Create dummy variables for historic health_spending (NA prior to our data)
     mutate(health_spending_minus_1 = lag(health_spending, 1),
            health_spending_minus_2 = lag(health_spending, 2),

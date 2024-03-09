@@ -2545,7 +2545,7 @@ plot_historical_impact = function() {
   message("  > Plotting historical impact")
   
   # Diseases to combine into one colour (set to NULL to turn off)
-  grouping = qc(Dip, HepB, JE, MenA, PCV, Rota, Rubella, YF) 
+  grouping = qc(HepB, JE, MenA, PCV, Rubella, YF) 
   
   other = "Other pathogens"
   
@@ -2581,6 +2581,8 @@ plot_historical_impact = function() {
     mutate(metric = recode(metric, !!!impact_dict), 
            metric = factor(metric, impact_dict)) %>%
     as.data.table()
+  
+  #browser()
   
   # Construct labels: total FVPs over analysis timeframe
   label_dt = results_dt %>%
@@ -2709,6 +2711,8 @@ plot_child_mortality = function() {
     mutate(metric = "avert", 
            case   = "vaccine") %>%
     select(metric, case, year, value = total_averted)
+  
+
   
   # Mortality rate over time
   rate_dt = mortality_dt %>%
@@ -3030,21 +3034,28 @@ plot_prob_death_age = function() {
   
   message("  > Plotting probability of death by age")
   
-  age_bins = 4
+  age_bins = 5
   
   # Dictionary for each vaccine case
   #
   # NOTE: Using reverse order here for prettier plot
   case_dict = list( 
     no_vaccine = "No historical vaccination",
-    vaccine    = "Vaccination as obserevd")
+    vaccine    = "Vaccination as observed")
   
   # Construct a somewhat elaborate y axis label
-  y_label = bquote(
-    ~.("Probability of death in n")
-    ^.("th") 
-    ~.("year of life")
-    ~.(paste0("(", max(o$years), ")")))
+  #y_label = bquote(
+  #  ~.("Probability of death in n")
+  #  ^.("th") 
+  #  ~.("year of life")
+  #  ~.(paste0("(", max(o$years), ")")))
+  
+  y_label = paste0("Probability of death (2024)")
+  
+  wrapper <- function(x, ...) 
+  {
+    paste(strwrap(x, ...), collapse = "\n")
+  }
   
   # Estimated child deaths averted by vaccination
   averted_dt = read_rds("history", "deaths_averted") %>%
@@ -3062,6 +3073,8 @@ plot_prob_death_age = function() {
     select(region, age, averted) %>%
     as.data.table()
   
+  browser()
+  
   # Probability of death by age
   plot_dt = table("wpp_pop") %>%
     filter(year == max(o$years)) %>%
@@ -3069,7 +3082,8 @@ plot_prob_death_age = function() {
               by = c("country", "year", "age")) %>%
     # xxx ...
     mutate(age = age + 1) %>%
-    filter(age %in% 2 ^ (0 : age_bins)) %>%
+   # filter(age %in% 2 ^ (0 : age_bins)) %>%
+    filter(age %in% (0 : age_bins)) %>%
     # Append region name...
     append_region_name() %>%
     # Average prob of death by region and year...
@@ -3096,24 +3110,32 @@ plot_prob_death_age = function() {
     arrange(region, case, age) %>%
     as.data.table()
   
+  #browser()
   # Plot both scenarios as side-by-side bars
-  g = ggplot(plot_dt) +
+  p1_dt = plot_dt %>% 
+          filter(region %in% c("African region",
+                               "Eastern Mediterranean region",
+                               "South-East Asian region"))
+    
+  p1 = ggplot(p1_dt) +
     aes(x = age, 
         y = value, 
         fill = case) +
     geom_col(position = "dodge") +
     # Facet by region...
     facet_wrap(
-      facets = vars(region), 
-      scales = "free_y") +
+      facets = vars(region),
+      labeller = labeller(region = label_wrap_gen(width = 15)))+#, 
+     # scales = "free_y") +
     # Set colour scheme...
     scale_fill_manual(
       values = o$palette_who) + 
     # Prettify x axis...
     scale_x_continuous(
-      name   = "Age (log2 scale)",
-      trans  = "log2", 
-      breaks = 2 ^ (0 : age_bins)) +
+      name   = NULL,
+     # trans  = "log2", 
+     # breaks = 2 ^ (0 : age_bins)) +
+    breaks = (0 : age_bins)) +
     # Prettify y axis...
     scale_y_continuous(
       name   = y_label,
@@ -3123,8 +3145,166 @@ plot_prob_death_age = function() {
       breaks = pretty_breaks())
   
   # Prettify theme
-  g = g + theme_classic() + 
-    theme(axis.title   = element_text(size = 20),
+  p1 = p1 + theme_classic() + 
+    theme(axis.title   = element_text(size = 16),
+          axis.title.x = element_text(
+            margin = margin(t = 20, b = 10)),
+          axis.title.y = element_text(
+            margin = margin(l = 10, r = 25)),
+          axis.text    = element_text(size = 12),
+          axis.ticks   = element_blank(), 
+          axis.line    = element_line(linewidth = 0.25),
+          strip.text   = element_text(size = 14),
+          strip.background = element_blank(), 
+          panel.spacing = unit(1, "lines"), 
+          panel.grid.major.y = element_line(linewidth = 0.25),
+         # legend.title = NULL, #element_blank(),
+          #legend.text  = element_text(size = 16),
+          #legend.key   = element_blank(),
+          legend.position = "none")#, 
+        # legend.key.height = unit(1, "lines"))#,
+          #legend.key.width  = unit(2, "lines"))
+  
+  p2_dt = plot_dt %>% 
+    filter(!region %in% c("African region",
+                         "Eastern Mediterranean region",
+                         "South-East Asian region"))
+  
+  p2 = ggplot(p2_dt) +
+    aes(x = age, 
+        y = value, 
+        fill = case) +
+    geom_col(position = "dodge") +
+    # Facet by region...
+    facet_wrap(
+      facets = vars(region),
+      labeller = labeller(region = label_wrap_gen(width = 15))) +
+    # scales = "free_y") +
+    # Set colour scheme...
+    scale_fill_manual(
+      values = o$palette_who) + 
+    # Prettify x axis...
+    scale_x_continuous(
+      name   = "Year of life",# (log2 scale)",
+      # trans  = "log2", 
+      # breaks = 2 ^ (0 : age_bins)) +
+      breaks = (0 : age_bins)) +
+    # Prettify y axis...
+    scale_y_continuous(
+      name   = y_label,
+      labels = percent, 
+      limits = c(0, NA), 
+      expand = expansion(mult = c(0, 0.05)), 
+      breaks = pretty_breaks())
+  
+  # Prettify theme
+  p2 = p2 + theme_classic() + 
+    theme(axis.title   = element_text(size = 16),
+          axis.title.x = element_text(
+            margin = margin(t = 20, b = 10)),
+          axis.title.y = element_text(
+            margin = margin(l = 10, r = 25)),
+          axis.text    = element_text(size = 12),
+          axis.ticks   = element_blank(), 
+          axis.line    = element_line(linewidth = 0.25),
+          strip.text   = element_text(size = 14),
+          strip.background = element_blank(), 
+          panel.spacing = unit(1, "lines"), 
+          panel.grid.major.y = element_line(linewidth = 0.25),
+          legend.title = element_blank(),
+          legend.text  = element_text(size = 14),
+          legend.key   = element_blank(),
+          legend.position = "bottom", 
+          legend.key.height = unit(2, "lines"),
+          legend.key.width  = unit(2, "lines"))
+#  browser()
+  # Estimated child deaths averted by vaccination
+  global_averted_dt = read_rds("history", "deaths_averted") %>%
+    filter(year == max(o$years)) %>%
+    # Append region name...
+    #append_region_name() %>%
+    # xxx ...
+    #group_by(region) %>%
+    summarise(total_averted = sum(impact)) %>%
+   # ungroup() %>%
+    # xxx ...
+    expand_grid(impact_age_multiplier()) %>%
+    mutate(age     = age + 1, 
+           averted = total_averted * scaler) %>%
+    select(age, averted) %>%
+    as.data.table()
+  
+  # Probability of death by age
+  global_plot_dt = table("wpp_pop") %>%
+    filter(year == max(o$years)) %>%
+    left_join(y  = table("wpp_deaths"), 
+              by = c("country", "year", "age")) %>%
+    # xxx ...
+    mutate(age = age + 1) %>%
+    # filter(age %in% 2 ^ (0 : age_bins)) %>%
+    filter(age %in% (0 : age_bins)) %>%
+    # Append region name...
+   # append_region_name() %>%
+    # Average prob of death by region and year...
+    group_by(age) %>%
+    summarise(pop    = sum(pop), 
+              deaths = sum(deaths)) %>%
+    ungroup() %>%
+    # Append deaths averted...
+    left_join(y  = global_averted_dt, 
+              by = c("age")) %>%
+    replace_na(list(averted = 0)) %>%
+    mutate(vaccine    = deaths / pop, 
+           no_vaccine = (deaths + averted) / pop) %>%
+    # Melt to long format ready for plotting...
+    select(age, vaccine, no_vaccine) %>%
+    pivot_longer(cols = c(vaccine, no_vaccine), 
+                 names_to = "case") %>%
+    # Set regional order...
+   # arrange(desc(value)) %>%
+   # mutate(region = fct_inorder(region)) %>%
+    # Set vaccine case order...
+    mutate(case = recode(case, !!!case_dict), 
+           case = factor(case, case_dict)) %>%
+    arrange(case, age) %>%
+    as.data.table()
+  
+  region_plots = plot_grid(p1, p2, ncol=1,  rel_heights = c(1, 1.25))
+  
+  p3 = ggplot(global_plot_dt) +
+    aes(x = age, 
+        y = value, 
+        fill = case) +
+    geom_col(position = "dodge") +
+    # Title
+    geom_label(
+      label="World", 
+      x=5,
+      y=0.035,
+      size = 8,
+      label.padding = unit(0.55, "lines"),
+      colour = "black",
+      fill = "white") +
+       # Set colour scheme...
+    scale_fill_manual(
+      values = o$palette_who) + 
+    # Prettify x axis...
+    scale_x_continuous(
+      name   = "Year of life",# (log2 scale)",
+      # trans  = "log2", 
+      # breaks = 2 ^ (0 : age_bins)) +
+      breaks = (0 : age_bins)) +
+    # Prettify y axis...
+    scale_y_continuous(
+      name   = y_label,
+      labels = percent, 
+      limits = c(0, NA), 
+      expand = expansion(mult = c(0, 0.05)), 
+      breaks = pretty_breaks())
+  
+  # Prettify theme
+  p3 = p3 + theme_classic() + 
+    theme(axis.title   = element_text(size = 16),
           axis.title.x = element_text(
             margin = margin(t = 20, b = 10)),
           axis.title.y = element_text(
@@ -3132,17 +3312,16 @@ plot_prob_death_age = function() {
           axis.text    = element_text(size = 12),
           axis.ticks   = element_blank(), 
           axis.line    = element_line(linewidth = 0.25),
-          strip.text   = element_text(size = 18),
+          strip.text   = element_text(size = 14),
           strip.background = element_blank(), 
           panel.spacing = unit(1, "lines"), 
           panel.grid.major.y = element_line(linewidth = 0.25),
-          legend.title = element_blank(),
-          legend.text  = element_text(size = 16),
-          legend.key   = element_blank(),
-          legend.position = "bottom", 
-          legend.key.height = unit(2, "lines"),
-          legend.key.width  = unit(2, "lines"))
+         legend.position = "none")
   
+  g = plot_grid(p3, region_plots, rel_widths = c(1.1,1))
+  
+  
+  #browser()
   # Save figure to file
   save_fig(g, "Probability of death by age", dir = "historical_impact")
   
@@ -3179,6 +3358,24 @@ plot_survival_increase = function() {
     select(region, age, averted) %>%
     as.data.table()
   
+  # Estimated child deaths averted by vaccination by country
+  country_averted_dt = read_rds("history", "deaths_averted") %>%
+    # ...
+    filter(year == max(o$years)) %>%
+    mutate(year = as.character(year)) %>%
+    # Append region...
+    left_join(y  = table("country"), 
+              by = "country") %>%
+    
+    group_by(country) %>%
+    summarise(total_averted = sum(impact)) %>%
+    ungroup() %>%
+      # ...
+    expand_grid(impact_age_multiplier()) %>%
+    mutate(averted = total_averted * scaler) %>%
+    select(country, age, averted) %>%
+    as.data.table()
+  
   survival_dt = table("wpp_pop") %>%
     left_join(y  = table("wpp_deaths"), 
               by = c("country", "year", "age")) %>%
@@ -3209,6 +3406,72 @@ plot_survival_increase = function() {
     select(region, age, pop, value = relative) %>%
     as.data.table()
   
+  current_gdp = table("gapminder_covariates") %>%
+                  select(country, year, gdp) %>%
+                  filter(year == 2021) %>%
+                  rename(current_gdp_year = year,
+                         current_gdp = gdp)
+  
+  start_gini = table("gapminder_covariates") %>%
+    select(country, year, gini) %>%
+    filter(year == 1974) %>%
+    rename(start_gini_year = year,
+           start_gini = gini)
+               
+  current_gini = table("gapminder_covariates") %>%
+    select(country, year, gini) %>%
+    filter(year == 2021) %>%
+    rename(current_gini_year = year,
+           current_gini = gini)
+  
+  country_dt = table("wpp_pop") %>%
+    left_join(y  = table("wpp_deaths"), 
+              by = c("country", "year", "age")) %>%
+    # xxx ...
+    filter(year == max(o$years), 
+           age  <= age_bound) %>%
+       # xxx ...
+    left_join(y  = country_averted_dt, 
+              by = c("country", "age")) %>%
+     # xxx...
+    mutate(c_pop   = cumsum(pop), 
+           c_death = cumsum(deaths), 
+           c_avert = cumsum(averted)) %>%
+   # xxx ...
+    mutate(vaccine    = c_death / c_pop, 
+            no_vaccine = (c_death + c_avert) / c_pop, 
+            abs   = no_vaccine - vaccine,
+            rel   = 1 - vaccine / no_vaccine) %>%
+   
+     select(country, year, age, pop, abs, rel) %>%
+    as.data.table()
+  
+ covariates_dt = country_dt %>%
+    left_join(y  = current_gdp, 
+              by = c("country"),
+              relationship = "many-to-many") %>%
+   left_join(y  = current_gini, 
+             by = c("country"),
+             relationship = "many-to-many") %>%
+   left_join(y  = start_gini, 
+             by = c("country"),
+             relationship = "many-to-many") %>%
+    as.data.table()
+  
+  
+  gdp_survival_dt = country_dt %>%
+    left_join(y  = current_gdp, 
+              by = c("country"),
+              relationship = "many-to-many") %>%
+    as.data.table()
+  
+  gini_survival_dt = country_dt %>%
+    left_join(y  = start_gini, 
+              by = c("country"),
+              relationship = "many-to-many") %>%
+    as.data.table()
+  
+
   world_dt = survival_dt %>%
     group_by(age) %>%
     mutate(weight = pop / sum(pop)) %>%
@@ -3222,6 +3485,8 @@ plot_survival_increase = function() {
     arrange(global, region) %>%
     mutate(region = fct_inorder(region)) %>%
     as.data.table()
+  
+  #browser()
   
   fvps_dt = table("coverage") %>%
     left_join(y  = table("country"), 
