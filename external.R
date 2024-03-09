@@ -25,8 +25,9 @@ run_external = function() {
   # # Simulate DynaMICE measles model
   # simulate_dynamice()
 
-  # TEMP: Construct temporary dummy polio results
-  dummy_polio()  # TODO: Remove when polio results available
+  # Read in external polio results (only required once)
+  read_polio()  # TODO: Remove when polio results available
+  read_ferrari()
 
   # Format external modelling results for EPI50 use
   format_measles()
@@ -255,97 +256,49 @@ simulate_dynamice = function() {
 }
 
 # ---------------------------------------------------------
-# TEMP: Construct temporary dummy polio results
+# TEMP: Read in external polio results
 # ---------------------------------------------------------
-dummy_polio = function() {
+read_polio = function() {
   
   # Check whether dummy results already exist
- # dummy_exist = file.exists(paste0(o$pth$extern, "epi50_polio_results.rds"))
+  file_exist = file.exists(paste0(o$pth$extern, "epi50_polio_results.rds"))
   
   # Return out if process not necessary
-  #if (dummy_exist && o$dummy_polio == FALSE)
-   # return()
+  if (file_exist && o$dummy_polio == FALSE)
+    return()
   
   message(" - Reading polio outcomes")
   
   # Load template of regional results
   template_file = "template_polio_region.csv"
-  template_dt = fread(paste0(o$pth$extern, template_file)) %>%
-    select(-value)
-  browser()
-  # All metrics of interest (epi outcomes and number of doses)
- # metrics = unique(template_dt$metric)
-  
-  # Crudely, expect around 30k deaths per year in counterfactual scenario
-  #annual_deaths = 30000
-  
-  # Split equally across regions and age groups
-  counterfactual = annual_deaths / 
-    (n_unique(template_dt$region) * 
-       n_unique(template_dt$age_group))
-  
-  # Create dummy counter-factual results
-  counterfactual_dt = template_dt %>%
-    filter(scenario == "no_vaccine",
-           metric   == "deaths") %>%
-    mutate(value = counterfactual)
-  
-  # Polio doses based on crude data extraction
-  doses_dt = table("coverage_everything") %>%
-    lazy_dt() %>%
-    inner_join(y  = table("d_v_a_extern"), 
-               by = "d_v_a_id") %>%
-    left_join(y  = table("country"), 
-              by = "country") %>%
-    left_join(y  = table("regimen"), 
-              by = "vaccine") %>%
-    mutate(metric = paste1(vaccine, "doses")) %>%
-    filter(metric %in% metrics) %>%
-    group_by(region, year, metric) %>%
-    summarise(value = sum(fvps * schedule)) %>%
-    ungroup() %>%
-    mutate(scenario  = "vaccine", 
-           age_group = "age_group_1") %>%
-    select(all_names(template_dt), value) %>%
-    full_join(y  = template_dt, 
-              by = names(template_dt)) %>%
-    filter(grepl(".+_doses$", metric)) %>%
-    replace_na(list(value = 0)) %>%
-    arrange(scenario, region, year, age_group, metric) %>%
-    as.data.table()
-  
-  # Concatenate into single datatable
-  dummy_dt = template_dt %>%
-    left_join(y  = rbind(doses_dt, counterfactual_dt),
-              by = names(template_dt)) %>%
-    replace_na(list(value = 0)) %>%
-    arrange(scenario, region, year, age_group, metric)
+  read_dt = fread(paste0(o$pth$extern, template_file)) 
   
   # Save dummy EPI50-formatted polio results
-  save_rds(dummy_dt, "extern", "epi50_polio_results")
+  save_rds(read_dt, "extern", "epi50_polio_results")
+
+}
+
+# ---------------------------------------------------------
+# TEMP: Construct temporary dummy polio results
+# ---------------------------------------------------------
+dummy_polio = function() {
   
-  # plot_dt = dummy_dt %>%
-  #   group_by(scenario, region, age_group, metric) %>%
-  #   mutate(cum_value = cumsum(value)) %>%
-  #   ungroup() %>%
-  #   group_by(region, year, age_group, metric) %>%
-  #   mutate(effect = cum_value -
-  #            cum_value[scenario == "no_vaccine"]) %>%
-  #   ungroup() %>%
-  #   as.data.table()
-  # 
-  # g = ggplot(plot_dt) +
-  #   aes(x = year,
-  #       y = effect,
-  #       colour   = region,
-  #       linetype = scenario) +
-  #   geom_line() +
-  #   facet_grid(
-  #     rows   = vars(metric),
-  #     cols   = vars(age_group),
-  #     scales = "free_y") +
-  #   scale_y_continuous(
-  #     labels = comma)
+  # Check whether dummy results already exist
+  # dummy_exist = file.exists(paste0(o$pth$extern, "epi50_polio_results.rds"))
+  
+  # Return out if process not necessary
+  #if (dummy_exist && o$dummy_polio == FALSE)
+  # return()
+  
+  message(" - Reading polio outcomes")
+  
+  # Load template of regional results
+  template_file = "template_polio_region.csv"
+  read_dt = fread(paste0(o$pth$extern, template_file)) 
+  
+  # Save dummy EPI50-formatted polio results
+  save_rds(read_dt, "extern", "epi50_polio_results")
+  
 }
 
 # ---------------------------------------------------------
@@ -494,7 +447,7 @@ format_polio = function() {
               by = c("scenario", "metric")) %>%
     mutate(diff = abs(clean - raw), 
            err  = diff > 1e-6)
-  
+
   # Throw an error if any differences are identified
   if (any(check_dt$err))
     stop("Error in country or age polio results disaggregation")
