@@ -3,14 +3,14 @@
 # Creates datatable: gbd_dict_table
 table:
 
-- disease: dip
+- disease: Dip
   gbd_name: "Diphtheria"
   
-- disease: tet
+- disease: Tet
   gbd_name: "Tetanus"
   
-- disease: per
+- disease: Per
   gbd_name: "Whooping cough"
   
-- disease: tb
+- disease: TB
   gbd_name: "Tuberculosis"

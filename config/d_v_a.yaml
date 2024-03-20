@@ -5,161 +5,175 @@ table:
 
 - d_v_a_name: "Hepatitis B"
   d_v_a_id: 1
-  disease: hepb
-  vaccine: hepb
+  disease: HepB
+  vaccine: HepB
   activity: routine
   source: vimc
   
 - d_v_a_name: "Hepatitis B (birth dose)"
   d_v_a_id: 2
-  disease: hepb
-  vaccine: hepb_bd
+  disease: HepB
+  vaccine: HepB_BD
   activity: routine
   source: vimc
   
 - d_v_a_name: "Haemophilus influenzae type b"
   d_v_a_id: 3
-  disease: hib
-  vaccine: hib
+  disease: Hib
+  vaccine: Hib3
   activity: routine
   source: vimc
   
 - d_v_a_name: "Japanese encephalitis"
   d_v_a_id: 4
-  disease: je
-  vaccine: je
+  disease: JE
+  vaccine: JE
   activity: routine
   source: vimc
   
 - d_v_a_name: "Japanese encephalitis (campaign)"
   d_v_a_id: 5
-  disease: je
-  vaccine: je
+  disease: JE
+  vaccine: JE
   activity: campaign
   source: vimc
   
 - d_v_a_name: "Meningitis A"
   d_v_a_id: 6
-  disease: mena
-  vaccine: mena
+  disease: MenA
+  vaccine: MenA
   activity: routine
   source: vimc
   
 - d_v_a_name: "Meningitis A (campaign)"
   d_v_a_id: 7
-  disease: mena
-  vaccine: mena
+  disease: MenA
+  vaccine: MenA
   activity: campaign
   source: vimc
   
 - d_v_a_name: "Pneumococcal"
   d_v_a_id: 8
-  disease: pcv
-  vaccine: pcv
+  disease: PCV
+  vaccine: PCV3
   activity: routine
   source: vimc
   
 - d_v_a_name: "Rotavirus"
   d_v_a_id: 9
-  disease: rota
-  vaccine: rota
+  disease: Rota
+  vaccine: Rota
   activity: routine
   source: vimc
   
-- d_v_a_name: "Rubella (combined)"
+- d_v_a_name: "Rubella (first dose)"
   d_v_a_id: 10
-  disease: rubella
-  vaccine: rubella
-  activity: all
+  disease: Rubella
+  vaccine: Rubella
+  activity: routine
+  source: vimc
+  
+- d_v_a_name: "Rubella (second dose)"
+  d_v_a_id: 11
+  disease: Rubella
+  vaccine: RCV2
+  activity: routine
+  source: vimc
+  
+- d_v_a_name: "Rubella (campaign)"
+  d_v_a_id: 12
+  disease: Rubella
+  vaccine: Rubella
+  activity: campaign
   source: vimc
   
 - d_v_a_name: "Yellow fever"
-  d_v_a_id: 11
-  disease: yf
-  vaccine: yf
+  d_v_a_id: 13
+  disease: YF
+  vaccine: YF
   activity: routine
   source: vimc
   
 - d_v_a_name: "Yellow fever (campaign)"
-  d_v_a_id: 12
-  disease: yf
-  vaccine: yf
+  d_v_a_id: 14
+  disease: YF
+  vaccine: YF
   activity: campaign
   source: vimc
   
 - d_v_a_name: "Diphtheria"
-  d_v_a_id: 13
-  disease: dip
-  vaccine: dip
+  d_v_a_id: 15
+  disease: Dip
+  vaccine: Dip3
   activity: all
   source: static
   
 - d_v_a_name: "Diphtheria (booster)"
-  d_v_a_id: 14
-  disease: dip
-  vaccine: dip_bx
+  d_v_a_id: 16
+  disease: Dip
+  vaccine: Dip_BX
   activity: all
   source: static
   
 - d_v_a_name: "Tetanus"
-  d_v_a_id: 15
-  disease: tet
-  vaccine: tet
+  d_v_a_id: 17
+  disease: Tet
+  vaccine: Tet3
   activity: all
   source: static
   
 - d_v_a_name: "Tetanus (booster)"
-  d_v_a_id: 16
-  disease: tet
-  vaccine: tet_bx
+  d_v_a_id: 18
+  disease: Tet
+  vaccine: Tet_BX
   activity: all
   source: static
 
 - d_v_a_name: "Tetanus (pregnancy)"
-  d_v_a_id: 17
-  disease: tet
-  vaccine: tet_px
+  d_v_a_id: 19
+  disease: Tet
+  vaccine: Tet_PX
   activity: all
   source: static
   
 - d_v_a_name: "Pertussis whole-cell"
-  d_v_a_id: 18
-  disease: per
-  vaccine: wper
+  d_v_a_id: 20
+  disease: Per
+  vaccine: wPer3
   activity: all 
   source: static
   
 - d_v_a_name: "Pertussis acellular"
-  d_v_a_id: 19
-  disease: per
-  vaccine: aper
+  d_v_a_id: 21
+  disease: Per
+  vaccine: aPer3
   activity: all
   source: static
   
 - d_v_a_name: "Pertussis (booster)"
-  d_v_a_id: 20
-  disease: per
-  vaccine: aper_bx
+  d_v_a_id: 22
+  disease: Per
+  vaccine: aPer_BX
   activity: all
   source: static
   
 - d_v_a_name: "Tuberculosis (BCG)"
-  d_v_a_id: 21
-  disease: tb
-  vaccine: bcg
+  d_v_a_id: 23
+  disease: TB
+  vaccine: BCG
   activity: all
   source: static
   
 - d_v_a_name: "Measles"
-  d_v_a_id: 22
-  disease: measles
-  vaccine: measles
+  d_v_a_id: 24
+  disease: Measles
+  vaccine: Measles
   activity: all
   source: extern
   
 - d_v_a_name: "Poliomyelitis"
-  d_v_a_id: 23
-  disease: polio
-  vaccine: polio
+  d_v_a_id: 25
+  disease: Polio
+  vaccine: Polio
   activity: all
   source: extern

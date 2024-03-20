@@ -26,14 +26,11 @@ prepare_dirs = function(o) {
   pth$input  = file.path(pth$code, "input")
   pth$config = file.path(pth$code, "config")
   
-  # Path to log files
-  pth$log = file.path(pth$code, "log")
-  
-  # Parent path of all VIMC results files
-  pth$vimc = file.path(pth$input, "vimc")
-  
   # Parent path of all external model output files
   pth$extern = file.path(pth$code, "extern")
+  
+  # Path to log files
+  pth$log = file.path(pth$code, "log")
   
   # ---- Output directories ----
   
@@ -52,6 +49,7 @@ prepare_dirs = function(o) {
   # Path to imputation and impact function files
   pth$impute = file.path(pth$output, "2_impute")
   pth$impact = file.path(pth$output, "3_impact")
+  pth$runs   = file.path(pth$impact, "runs")
   
   # Path to figures and other output results
   pth$history = file.path(pth$output, "4_history")
@@ -65,6 +63,15 @@ prepare_dirs = function(o) {
   
   # Append paths to o list
   o = set_dirs(o, pth)
+  
+  # ---- Data URLs ----
+  
+  # stem = "https://ghdx.healthdata.org/sites/default/files/record-attached-files/"
+  # 
+  # o$data = list(
+  #   sdi = c("IHME_GBD_2019_SDI_1990_2019_Y2020M10D15.CSV", 
+  #           "IHME_GBD_2019_SDI_1970_1989_Y2020M10D15.CSV"), 
+  #   haqi = "IHME_GBD_2019_HAQ_1990_2019_DATA.zip")
     
   return(o)
 }

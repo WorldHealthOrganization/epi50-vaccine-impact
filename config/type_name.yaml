@@ -3,17 +3,17 @@
 # Creates datatable: type_name_table
 table:
 
-- type: dip
+- type: Dip
   type_name: "Diphtheria-containing vaccine"
   
-- type: tet
+- type: Tet
   type_name: "Tetanus-containing vaccine"
   
-- type: wper
+- type: wPer
   type_name: "Whole-cell pertussis-containing vaccine"
   
-- type: aper
+- type: aPer
   type_name: "Acellular pertussis-containing vaccine"
   
-- type: bcg
+- type: BCG
   type_name: "Bacille Calmette-Guerin"
