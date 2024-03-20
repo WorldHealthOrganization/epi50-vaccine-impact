@@ -3,71 +3,71 @@
 # Creates datatable: regimen_table
 table:
 
-- vaccine: HepB
+- vaccine: hepb
   schedule: 3
   
-- vaccine: HepB_BD
+- vaccine: hepb_bd
   schedule: 1
   
-- vaccine: Hib3
+- vaccine: hib
   schedule: 3
   
-- vaccine: JE
+- vaccine: je
   schedule: 2
   
-- vaccine: MenA
+- vaccine: mena
   schedule: 2
   
-- vaccine: PCV3
+- vaccine: pcv
   schedule: 3
   
-- vaccine: Rota
+- vaccine: rota
   schedule: 3
   
-- vaccine: Rubella
+- vaccine: rubella
   schedule: 2
   
-- vaccine: YF
+- vaccine: yf
   schedule: 1
   
-- vaccine: Dip3
+- vaccine: dip
   schedule: 3
   
-- vaccine: Dip_BX
+- vaccine: dip_bx
   schedule: 3
   
-- vaccine: Tet3
+- vaccine: tet
   schedule: 3
   
-- vaccine: Tet_BX
+- vaccine: tet_bx
   schedule: 3
   
-- vaccine: Tet_PX
+- vaccine: tet_px
   schedule: 1
   
-- vaccine: wPer3
+- vaccine: wper
   schedule: 3
   
-- vaccine: aPer3
+- vaccine: aper
   schedule: 3
   
-- vaccine: aPer_BX
+- vaccine: aper_bx
   schedule: 3
   
-- vaccine: BCG
+- vaccine: bcg
   schedule: 1
   
-- vaccine: MCV1
+- vaccine: mcv1
   schedule: 1
   
-- vaccine: MCV2
+- vaccine: mcv2
   schedule: 1
   
-- vaccine: Measles
+- vaccine: measles
   schedule: 2
   
-- vaccine: IPV
+- vaccine: ipv
   schedule: 4
   
-- vaccine: OPV
+- vaccine: opv
   schedule: 4

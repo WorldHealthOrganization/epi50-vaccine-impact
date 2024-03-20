@@ -5,43 +5,43 @@
 # Creates datatable: vaccine_efficacy_table
 table:
 
-- vaccine: Dip3
+- vaccine: dip
   fn: "function(a, b) a * exp(-t * b)" # Exponenital decay
   data: 
   - [0.95, 0]   # Initial efficacy [1]
   - [0.48, 19]  # Half life [2]
   - [0.48, 27]  # Half life [3]
   
-- vaccine: Dip_BX
+- vaccine: dip_bx
   fn: "function(a) a" # Constant
   data: 
   - [0.95, 0]  # Assumption
   
-- vaccine: Tet3
+- vaccine: tet
   fn: "function(a, b) a * exp(-t * b)" # Exponenital decay
   data: 
   - [0.95, 0]   # Initial efficacy [4]
   - [0.48, 11]  # Half life [5]
   - [0.48, 14]  # Half life [3]
    
-- vaccine: Tet_BX
+- vaccine: tet_bx
   fn: "function(a) a" # Constant
   data: 
   - [0.95, 0]  # Assumption
 
-- vaccine: Tet_PX
+- vaccine: tet_px
   fn: "function(a) ifelse(t < 1, a, 0)" # Step function
   data: 
   - [0.45, 0]  # xxxxxxx efficacy [6]
   
-- vaccine: wPer3
+- vaccine: wper
   fn: "function(a, b) a * exp(-t * b)" # Exponenital decay
   data: 
   - [0.92, 0]   # Initial efficacy [7]
   - [0.94, 0]   # Initial efficacy [9]
   - [0.46, 15]  # Assumption
   
-- vaccine: aPer3
+- vaccine: aper
   fn: "function(a, b) a * exp(-t * b)" # Exponenital decay
   data: 
   - [0.80, 0]  # Initial efficacy [8]
@@ -49,12 +49,12 @@ table:
   - [0.49, 5]  # 75% efficacy drops 35% after 5 years [10]
   - [0.41, 8]  # Vaccine efficacy of 41% after 8 years [11]
   
-- vaccine: aPer_BX
+- vaccine: aper_bx
   fn: "function(a) a" # Constant
   data: 
   - [0.80, 0]  # Assumption
   
-- vaccine: BCG
+- vaccine: bcg
   fn: "function(a, b, c, d = 10) a + (b - a) / (1 + (t / c) ^ -d)" # Sigmoidal
   data: 
   - [0.66, 0]   # Initial efficacy [12]

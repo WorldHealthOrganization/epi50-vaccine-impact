@@ -5,327 +5,340 @@ table:
 
 - intervention: bcg
   vaccine: 
-  - BCG
+  - bcg
   
 - intervention: bopv
   vaccine: 
-  - OPV
+  - opv
   
 - intervention: bopv_ipv
   vaccine:
-  - OPV
-  - IPV
+  - opv
+  - ipv
   
 - intervention: bopv_ipv_frac
   vaccine:
-  - OPV
-  - IPV
+  - opv
+  - ipv
   
 - intervention: diphcv4
   vaccine: 
-  - Dip_BX
+  - dip_bx
   
 - intervention: diphteria
   vaccine: 
-  - Dip3
+  - dip
   
 - intervention: dt
   vaccine:
-  - Dip3
-  - Tet3
+  - dip
+  - tet
   
 - intervention: dt_tdt
   vaccine:
-  - Dip3
-  - Tet3
+  - dip
+  - tet
   
 - intervention: dtap
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
+  - dip
+  - tet
+  - aper
   
 - intervention: dtaphibhepbipv
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
-  - Hib3
-  - HepB
+  - dip
+  - tet
+  - aper
+  - hib
+  - hepb
   
 - intervention: dtp
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
+  - dip
+  - tet
+  - aper
   
 - intervention: dtpcv3
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
+  - dip
+  - tet
+  - aper
   
 - intervention: dtpcv4
   vaccine:
-  - Dip_BX
-  - Tet_BX
-  - aPer_BX
+  - dip_bx
+  - tet_bx
+  - aper_bx
   
 - intervention: dtphepb
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
-  - HepB
+  - dip
+  - tet
+  - aper
+  - hepb
   
 - intervention: dtphib
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
-  - Hib3
+  - dip
+  - tet
+  - aper
+  - hib
   
 - intervention: dtphibhepb
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
-  - Hib3
-  - HepB
+  - dip
+  - tet
+  - aper
+  - hib
+  - hepb
+  
 - intervention: dtphibhepb3
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
-  - Hib3
-  - HepB
+  - dip
+  - tet
+  - aper
+  - hib
+  - hepb
   
 - intervention: dtphibhepbipv
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
-  - Hib3
-  - HepB
+  - dip
+  - tet
+  - aper
+  - hib
+  - hepb
   
 - intervention: dtwp
   vaccine:
-  - Dip3
-  - Tet3
-  - wPer3
+  - dip
+  - tet
+  - wper
   
 - intervention: hepb
   vaccine: 
-  - HepB
+  - hepb
   
 - intervention: hepb_bd
   vaccine: 
-  - HepB_BD
+  - hepb_bd
   
 - intervention: hepb_bdall
   vaccine: 
-  - HepB_BD
+  - hepb_bd
   
 - intervention: hepb3
   vaccine: 
-  - HepB
+  - hepb
   
 - intervention: hib
   vaccine: 
-  - Hib3
+  - hib
   
 - intervention: hib3
   vaccine: 
-  - Hib3
+  - hib
   
 - intervention: hibhepb
   vaccine:
-  - Hib3
-  - HepB
+  - hib
+  - hepb
   
 - intervention: ipv
   vaccine: 
-  - IPV
+  - ipv
   
 - intervention: japenc
   vaccine: 
-  - JE
+  - je
   
 - intervention: japenc_c
   vaccine: 
-  - JE
+  - je
   
 - intervention: m_mmr
   vaccine:
-  - Measles
-  - Rubella
+  - measles
+  - rubella
   
 - intervention: m_mr
   vaccine:
-  - Measles
-  - Rubella
+  - measles
+  - rubella
   
 - intervention: mcv1
   vaccine: 
-  - MCV1
+  - mcv1
   
 - intervention: mcv2
   vaccine: 
-  - MCV2
+  - mcv2
   
 - intervention: measles
   vaccine: 
-  - Measles
+  - measles
   
-# TODO: Check each of these carefully
 - intervention: men_a
-  vaccine: MenA
+  vaccine: 
+  - mena
+  
 - intervention: men_a_conj
-  vaccine: MenA
+  vaccine:
+  - mena
+  
 - intervention: men_ac
-  vaccine: MenA
+  vaccine: 
+  - mena
+  
 - intervention: men_acw
-  vaccine: MenA
+  vaccine: 
+  - mena
+  
 - intervention: men_acwy
-  vaccine: MenA
+  vaccine: 
+  - mena
+  
 - intervention: men_acyw_135conj
-  vaccine: MenA
+  vaccine: 
+  - mena
+  
 - intervention: men_acyw_conj
-  vaccine: MenA
+  vaccine: 
+  - mena
   
 - intervention: mmr
   vaccine:
-  - Measles
-  - Rubella
+  - measles
+  - rubella
   
 - intervention: mmr_polio
   vaccine:
-  - Measles
-  - Rubella
-  - IPV
+  - measles
+  - rubella
+  - ipv
   
 - intervention: mopv3
   vaccine: 
-  - OPV
+  - opv
   
 - intervention: mr
   vaccine:
-  - Measles
-  - Rubella
+  - measles
+  - rubella
   
 - intervention: mr_mmr
   vaccine:
-  - Measles
-  - Rubella
+  - measles
+  - rubella
   
 - intervention: opv
   vaccine: 
-  - OPV
+  - opv
   
 - intervention: opvt
   vaccine: 
-  - OPV
+  - opv
   
 - intervention: pab  # Protection at birth against neonatal tetanus 
   vaccine: 
-  - Tet_PX
+  - tet_px
   
 - intervention: pcv3
   vaccine: 
-  - PCV3
+  - pcv
   
 - intervention: pcv7
   vaccine: 
-  - PCV3
+  - pcv
   
 - intervention: pcv10
   vaccine: 
-  - PCV3
+  - pcv
   
 - intervention: pcv13
   vaccine: 
-  - PCV3
+  - pcv
   
 - intervention: penta_td
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
-  - Hib3
-  - HepB
+  - dip
+  - tet
+  - aper
+  - hib
+  - hepb
   
 - intervention: percv4
   vaccine: 
-  - aPer_BX
+  - aper_bx
   
 - intervention: pneumo_conj
   vaccine: 
-  - PCV3
+  - pcv
   
 - intervention: pol3
   vaccine:
-  - OPV
-  - IPV
+  - opv
+  - ipv
   
 - intervention: ppv23
   vaccine: 
-  - PCV3
+  - pcv
   
 - intervention: rcv
   vaccine: 
-  - Rubella
+  - rubella
   
 - intervention: rotac
   vaccine: 
-  - Rota
+  - rota
   
 - intervention: rotavirus
   vaccine: 
-  - Rota
+  - rota
   
 - intervention: td_s
   vaccine:
-  - Dip3
-  - Tet3
+  - dip
+  - tet
   
 - intervention: tdap_s
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
+  - dip
+  - tet
+  - aper
   
 - intervention: tdipv_s
   vaccine:
-  - Dip3
-  - Tet3
-  - IPV
+  - dip
+  - tet
+  - ipv
   
 - intervention: tdpipv
   vaccine:
-  - Dip3
-  - Tet3
-  - aPer3
-  - IPV
+  - dip
+  - tet
+  - aper
+  - ipv
   
-- intervention: tt
+- intervention: t
   vaccine: 
-  - Tet3
+  - tet
   
 - intervention: tt2plus
   vaccine: 
-  - Tet3
+  - tet
   
 - intervention: ttcv4
   vaccine: 
-  - Tet_BX
+  - tet_bx
   
 - intervention: yf
   vaccine: 
-  - YF
+  - yf
   
 - intervention: yfv
   vaccine: 
-  - YF
+  - yf
 
 # Vaccines not modelled
 - intervention: "15hpv1_f"
