@@ -1,0 +1,19 @@
+---
+
+# Creates datatable: metric_dict_table
+table:
+
+- metric: deaths
+  metric_short: "Deaths"
+  metric_long: "Deaths"
+  metric_impact: "Deaths averted"
+  
+- metric: dalys
+  metric_short: "YFH"
+  metric_long: "Years of Full Health"
+  metric_impact: "Years of Full Health gained"
+  
+- metric: yll
+  metric_short: "YL"
+  metric_long: "Years of Life"
+  metric_impact: "Years of Life saved"

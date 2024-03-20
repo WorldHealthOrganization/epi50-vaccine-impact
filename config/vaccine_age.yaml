@@ -3,76 +3,73 @@
 # Creates datatable: vaccine_age_table
 table:
 
-- vaccine: HepB
+- vaccine: hepb
   age: 0
   
-- vaccine: HepB_BD
+- vaccine: hepb_bd
   age: 0
   
-- vaccine: Hib3
+- vaccine: hib
   age: 0
   
-- vaccine: JE
+- vaccine: je
   age: 0
   
-- vaccine: MenA
+- vaccine: mena
   age: 0
   
-- vaccine: PCV3
+- vaccine: pcv
   age: 0
   
-- vaccine: RCV2
+- vaccine: rota
   age: 0
   
-- vaccine: Rota
+- vaccine: rubella
   age: 0
   
-- vaccine: Rubella
+- vaccine: yf
   age: 0
   
-- vaccine: YF
+- vaccine: dip
   age: 0
   
-- vaccine: Dip3
-  age: 0
-  
-- vaccine: Dip_BX
+- vaccine: dip_bx
   age: 7
   
-- vaccine: Tet3
+- vaccine: tet
   age: 0
   
-- vaccine: Tet_BX
+- vaccine: tet_bx
   age: 7
 
-- vaccine: Tet_PX
+- vaccine: tet_px
   age: NA  # Average age of child birth - extracted from data
   
-- vaccine: wPer3
+- vaccine: wper
   age: 0
   
-- vaccine: aPer3
+- vaccine: aper
   age: 0
   
-- vaccine: aPer_BX
+- vaccine: aper_bx
   age: 7
   
-- vaccine: BCG
+- vaccine: bcg
   age: 0
   
-- vaccine: MCV1
+- vaccine: mcv1
   age: 1
   
-- vaccine: MCV2
+- vaccine: mcv2
   age: 4
   
-- vaccine: Measles
+- vaccine: measles
   age: 4
   
-- vaccine: IPV
+- vaccine: ipv
   age: 0
   
-- vaccine: OPV
+- vaccine: opv
   age: 0
 
 # Source for DTP-containing booster dose age groups:

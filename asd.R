@@ -16,10 +16,8 @@
 #  * Denotes mandatory inputs.
 #
 # OPTIONAL SETTINGS:
-#  max_iters := Maximum number of ASD iterations.
-# plot_iters := Number of iterations to skip between each progress plot.
-#    plot_fn := Function handle for optional custom plot.
-#    verbose := Display iteration-by-iteration progress in console.
+#   iters := Maximum number of ASD iterations.
+# verbose := Display iteration-by-iteration progress in console.
 # 
 # OUTPUT:
 #     x := Vector of parameter values that minimise fn.
@@ -32,9 +30,7 @@
 # NOTES:
 # - The objective function, fn, must return a list containing a 
 #   variable, y, denoting the values of the function at input x. 
-#   That is, y = fn(x). Additional output can also be defined to 
-#   be used by a custom plotting function, plot_fn.
-# - Set 'plot_iters' option to NULL to turn off all progress plotting.
+#   That is, y = fn(x).
 # - Set 'verbose' option to FALSE to turn off console messages.
 #
 # Credit for the algorthim goes to C.C.Kerr and colleagues:
@@ -46,8 +42,7 @@
 # ---------------------------------------------------------
 # Main function: Adaptive Stochastic Descent algorithm.
 # ---------------------------------------------------------
-asd = function(fn, x0, args = NULL, lb = NULL, ub = NULL, max_iters = 100, 
-               plot_iters = NULL, plot_fn = NULL, verbose = FALSE) {
+asd = function(fn, x0, args = NULL, lb = NULL, ub = NULL, iters = 100) {
   
   # ---- Algorithm settings ----
   
@@ -82,24 +77,17 @@ asd = function(fn, x0, args = NULL, lb = NULL, ub = NULL, max_iters = 100,
   y0 = y = fn_out$y  # Extract obj fn value
   
   # Vector to store all minimised objective function values
-  y_vec = rep(NA, max_iters + 1)
+  y_vec = rep(NA, iters + 1)
   y_vec[1] = y0
   
   # Matrix to store history of 'current best' parameter value
-  x_mat = matrix(NA, nrow = max_iters + 1, ncol = n_params)
+  x_mat = matrix(NA, nrow = iters + 1, ncol = n_params)
   x_mat[1, ] = x = x0
-  
-  # Display starting point
-  if (verbose) message("Iter: 0,  y = ", y0)
-  
-  # Show initial state of objective function and paramter values
-  if (!is.null(plot_iters))
-    suppressWarnings(plot_progress(y_vec, x_mat, param_probs, plot_fn, fn_out))
   
   # ---- Main algorithm loop ----
   
   # Main optimisation loop
-  for (i in 1 : max_iters) {
+  for (i in 1 : iters) {
     
     # Randomly select a parameter to vary
     param_idx = min(which(runif(1) < cumsum(param_probs)))
@@ -152,21 +140,6 @@ asd = function(fn, x0, args = NULL, lb = NULL, ub = NULL, max_iters = 100,
     
     # Re-normalise probability vector after it has been altered
     param_probs = param_probs / sum(param_probs)
-    
-    # ---- Display progress ----
-    
-    # Display progress in console on each iteration
-    param_txt = paste0("(Chosen parameter: ", param_idx, ")")
-    if (verbose) message("Iter: ", i, ",  y = ", y, "  ", param_txt)
-    
-    # Do not plot at all if flag is null	
-    if (!is.null(plot_iters)) {
-      
-      # Plot progress on desired iterations
-      if (i %% plot_iters == 0) {
-        plot_progress(y_vec, x_mat, param_probs, plot_fn, fn_out)
-      }
-    }
   }
   
   # ---- Prepare output ----
@@ -180,46 +153,5 @@ asd = function(fn, x0, args = NULL, lb = NULL, ub = NULL, max_iters = 100,
   output$y_vec = y_vec
   
   return(output)
-}
-
-# ---------------------------------------------------------
-# Plot optimisation progress with parameter values.
-# ---------------------------------------------------------
-plot_progress = function(y_vec, x_mat, param_probs, plot_fn, fn_out) {
-  
-  # Initiate figure handle list
-  f = list()
-  
-  # Append custom plot if defined
-  if (!is.null(plot_fn)) f$p = plot_fn(fn_out)
-  
-  # Fig 1: Evolution of best objective function value
-  df = data.frame(x = 1 : dim(x_mat)[1] - 1, y = y_vec)
-  f$f1 = ggplot(df, aes(x = x, y = y)) + 
-    geom_point(size = 2) + geom_line(size = 0.2) + 
-    labs(x = "Iteration", y = "Objective function value")
-  
-  # Fig 2: Parameter selection probability
-  df = data.frame(x = 1 : dim(x_mat)[2], y = param_probs)
-  f$f2 = ggplot(df, aes(x = x, y = y, colour = factor(x))) + 
-    geom_point(size = 3, show.legend = FALSE) + 
-    labs(x = "Parameter #", y = "Selection probability")
-  
-  # Fig 3: History of parameter values
-  df = melt(x_mat, varnames = c("time", "param"))
-  f$f3 = ggplot(df, aes(x = time, y = value, group = param, colour = factor(param))) +
-    geom_line(size = 2, show.legend = FALSE) +
-    labs(x = "Parameter #", y = "Parameter value")
-  
-  # If first iteration, plot points as lines will not be displayed
-  if (sum(!is.na(df$value)) == dim(x_mat)[2])
-    f$f3 = f$f3 + geom_point(size = 1, show.legend = FALSE)
-  
-  # Define grid.arrange layout matrix
-  if (is.null(plot_fn)) layout = rbind(c(1, 1), c(2, 3))
-  else layout = rbind(c(1, 2), c(3, 4))
-  
-  # Display all subplots into a single figure
-  suppressWarnings(grid.arrange(grobs = f, layout_matrix = layout))
 }
 

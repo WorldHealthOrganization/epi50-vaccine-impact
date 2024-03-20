@@ -16,7 +16,7 @@ table:
   region_name: "Region of the Americas"
   
 - region: SEARO
-  region_name: "South-East Asian region"
+  region_name: "South-East Asia region"
   
 - region: WPRO
   region_name: "Western Pacific region"

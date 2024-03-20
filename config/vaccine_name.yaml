@@ -3,74 +3,71 @@
 # Creates datatable: vaccine_name_table
 table:
 
-- vaccine: HepB
+- vaccine: hepb
   vaccine_name: "Hepatitis B"
   
-- vaccine: HepB_BD
+- vaccine: hepb_bd
   vaccine_name: "Hep B birth dose"
   
-- vaccine: Hib3
+- vaccine: hib
   vaccine_name: "Haemophilus influenzae type b"
   
-- vaccine: JE
+- vaccine: je
   vaccine_name: "Japanese encephalitis"
   
-- vaccine: MenA
+- vaccine: mena
   vaccine_name: "Meningitis A"
   
-- vaccine: PCV3
+- vaccine: pcv
   vaccine_name: "Pneumococcal"
   
-- vaccine: Rota
+- vaccine: rota
   vaccine_name: "Rotavirus"
   
-- vaccine: Rubella
+- vaccine: rubella
   vaccine_name: "Rubella"
   
-- vaccine: RCV2
-  vaccine_name: "Rubella-containing"
-  
-- vaccine: YF
+- vaccine: yf
   vaccine_name: "Yellow fever"
   
-- vaccine: Dip3
+- vaccine: dip
   vaccine_name: "Diphtheria primary"
   
-- vaccine: Dip_BX
+- vaccine: dip_bx
   vaccine_name: "Diphtheria booster"
   
-- vaccine: Tet3
+- vaccine: tet
   vaccine_name: "Tetanus primary"
   
-- vaccine: Tet_BX
+- vaccine: tet_bx
   vaccine_name: "Tetanus booster"
   
-- vaccine: Tet_PX
+- vaccine: tet_px
   vaccine_name: "Tetanus pregnancy"
   
-- vaccine: wPer3
+- vaccine: wper
   vaccine_name: "Whole-cell pertussis"
   
-- vaccine: aPer3
+- vaccine: aper
   vaccine_name: "Acellular pertussis primary"
   
-- vaccine: aPer_BX
+- vaccine: aper_bx
   vaccine_name: "Acellular pertussis booster"
   
-- vaccine: BCG
+- vaccine: bcg
   vaccine_name: "Bacille Calmette-Guerin"
   
-- vaccine: MCV1
+- vaccine: mcv1
   vaccine_name: "Measles first dose"
   
-- vaccine: MCV2
+- vaccine: mcv2
   vaccine_name: "Measles second dose"
   
-- vaccine: Measles
+- vaccine: measles
   vaccine_name: "Measles"
   
-- vaccine: IPV
+- vaccine: ipv
   vaccine_name: "Poliomyelitis inactivated"
   
-- vaccine: OPV
+- vaccine: opv
   vaccine_name: "Poliomyelitis oral"

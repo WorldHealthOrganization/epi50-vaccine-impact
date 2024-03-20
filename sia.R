@@ -12,7 +12,7 @@
 # ---------------------------------------------------------
 coverage_sia = function(vimc_countries_dt) {
   
-  message(" - Coverage data: SIA")
+  message(" > Coverage data: SIA")
   
   # Throw an error if the necessary data is not available
   sia_file = paste0(o$pth$input, "sia_coverage.csv")

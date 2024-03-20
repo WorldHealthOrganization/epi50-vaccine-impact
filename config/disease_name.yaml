@@ -3,44 +3,44 @@
 # Creates datatable: disease_name_table
 table:
 
-- disease: HepB
+- disease: hepb
   disease_name: "Hepatitis B"
   
-- disease: Hib
+- disease: hib
   disease_name: "Haemophilus influenzae type b"
   
-- disease: JE
+- disease: je
   disease_name: "Japanese encephalitis"
 
-- disease: MenA
+- disease: mena
   disease_name: "Meningitis A"
   
-- disease: PCV
+- disease: pcv
   disease_name: "Pneumococcal"
   
-- disease: Rota
+- disease: rota
   disease_name: "Rotavirus"
   
-- disease: Rubella
+- disease: rubella
   disease_name: "Rubella"
   
-- disease: YF
+- disease: yf
   disease_name: "Yellow fever"
   
-- disease: Dip
+- disease: dip
   disease_name: "Diphtheria"
   
-- disease: Tet
+- disease: tet
   disease_name: "Tetanus"
   
-- disease: Per
+- disease: per
   disease_name: "Pertussis"
   
-- disease: TB
+- disease: tb
   disease_name: "Tuberculosis"
   
-- disease: Measles
+- disease: measles
   disease_name: "Measles"
   
-- disease: Polio
+- disease: polio
   disease_name: "Poliomyelitis"

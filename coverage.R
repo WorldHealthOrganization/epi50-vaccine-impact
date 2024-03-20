@@ -82,31 +82,46 @@ prepare_coverage = function() {
 # ---------------------------------------------------------
 coverage_vimc = function() {
   
-  message(" - Coverage data: VIMC")
+  message(" > Coverage data: VIMC")
   
   # Vaccines for which we'll use VIMC estimates
-  vaccines_dt = table("d_v_a") %>%
+  d_v_a_dt = table("d_v_a") %>%
     filter(source == "vimc") %>%
     bind_rows(table("d_v_a_extern")) %>%
-    select(d_v_a_id, vaccine, activity)
+    select(d_v_a_id, disease, vaccine, activity)
+  
+  # Recode vaccine IDs for consistency
+  vaccine_recode = c(
+    hib3 = "hib", 
+    pcv3 = "pcv", 
+    rcv2 = "rubella")
   
   # Extract VIMC vaccine coverage data
   vimc_dt = fread(paste0(o$pth$input, "vimc_coverage.csv")) %>%
-    select(country, disease, vaccine, activity = activity_type, 
+    select(disease, vaccine, activity = activity_type, country,
            gender, year, age, fvps_adjusted, cohort_size) %>%
+    # Countries and timeframe of interest...
     filter(country %in% all_countries(), 
            year    %in% o$years) %>%
-    # Combine gender where necessary...
-    mutate(gender = ifelse(gender == "Both", "b", "x")) %>%
-    group_by(country, disease, vaccine, activity, gender, year, age) %>%
+    # Recode disease and vaccines...
+    mutate(disease = tolower(disease), 
+           vaccine = tolower(vaccine), 
+           vaccine = recode(vaccine, !!!vaccine_recode)) %>%
+    # Rubella special case...
+    mutate(activity = ifelse(
+      test = disease == "rubella", 
+      yes  = "all", 
+      no   = activity)) %>%
+    # Append d_v_a ID...
+    inner_join(y  = d_v_a_dt, 
+               by = c("disease", "vaccine", "activity")) %>%
+    # Summarise where ...
+    group_by(d_v_a_id, country, year, age) %>%
     summarise(fvps     = sum(fvps_adjusted),
               cohort   = sum(cohort_size),
               coverage = fvps / cohort) %>%
     ungroup() %>%
-    # Append d_v_a ID...
-    inner_join(y  = vaccines_dt, 
-               by = c("vaccine", "activity")) %>%
-    select(d_v_a_id, country, year, age, fvps, cohort, coverage) %>%
+    # Tidy up...
     arrange(d_v_a_id, country, year, age) %>%
     mutate(source = "vimc") %>%
     as.data.table()
@@ -119,7 +134,7 @@ coverage_vimc = function() {
 # ---------------------------------------------------------
 coverage_wiise = function(vimc_countries_dt) {
   
-  message(" - Coverage data: WIISE")
+  message(" > Coverage data: WIISE")
   
   # ---- Load data ----
   
@@ -254,12 +269,16 @@ coverage_wiise = function(vimc_countries_dt) {
   
   # Age at vaccination for pregnancy vaccines
   age_birth_dt = table("vaccine_age") %>%
-    filter(age == "NA") %>% 
-    select(vaccine) %>%
-    expand_grid(table("birth_age")) %>%
     left_join(y  = d_v_a_dt, 
               by = "vaccine") %>%
-    select(d_v_a_id, country, age, weight) %>%
+    filter(age == "NA") %>% 
+    select(d_v_a_id) %>%
+    expand_grid(table("wpp_fertility")) %>%
+    # Remove trivial values...
+    filter(fertility > 1e-6) %>%
+    group_by(country, year) %>%
+    mutate(fertility = fertility / sum(fertility)) %>%
+    ungroup() %>%
     as.data.table()
   
   # Append age and calculate FVPs
@@ -275,12 +294,12 @@ coverage_wiise = function(vimc_countries_dt) {
               by = c("country", "year", "age")) %>%
     mutate(sheduled_doses = coverage * pop) %>%
     calculate_fvps() %>%
-    # But we want coverage in terms of mothers...
+    # But we want FVPs in terms of mothers...
     select(-age, -cohort, -coverage) %>%
     left_join(y  = age_birth_dt,
-              by = c("d_v_a_id", "country"), 
+              by = c("d_v_a_id", "country", "year"), 
               relationship = "many-to-many") %>%
-    mutate(fvps = fvps * weight) %>%
+    mutate(fvps = fvps * fertility) %>%
     # Append parental demographics...
     left_join(y  = table("wpp_pop"), 
               by = c("country", "year", "age")) %>%
@@ -313,7 +332,7 @@ calculate_fvps = function(coverage_dt) {
   # For primary schedule, assume all new FVPs
   primary_dt = coverage_dt %>% 
     lazy_dt() %>%
-    filter(!grepl("_BX$", vaccine)) %>%
+    filter(!grepl("_bx$", vaccine)) %>%
     group_by(d_v_a_id, country, year, age) %>%
     summarise(fvps   = sum(sheduled_doses),  # Using sum
               cohort = mean(pop)) %>%
@@ -322,7 +341,7 @@ calculate_fvps = function(coverage_dt) {
   
   # All booster doses
   booster_dt = coverage_dt %>% 
-    filter(grepl("_BX$", vaccine))
+    filter(grepl("_bx$", vaccine))
   
   # Check whether trivial
   if (nrow(booster_dt) == 0) {
@@ -431,23 +450,33 @@ linear_coverage_scaleup = function(coverage_dt) {
 # ---------------------------------------------------------
 constant_coverage_extapolation = function(coverage_dt) {
   
-  # Years we will extrapolate for
-  data_years   = unique(coverage_dt$year)
-  extrap_years = setdiff(o$years, data_years)
-  
   # Extrapolate coverage data from most recent year
   extrap_dt = coverage_dt %>%
     # Remove reference to FVPs, we'll recalculate...
     select(-fvps, -cohort) %>%
-    filter(year == max(year)) %>%
+    # Years from which to extrapolate (3 years with the past 5)...
+    filter(year >= max(o$years) - 5) %>%
+    group_by(d_v_a_id, country, age) %>%
+    slice_max(year, n = 3, with_ties = FALSE) %>%
+    ungroup() %>%
+    # Mean coverage over these recent years...
+    group_by(d_v_a_id, country, age) %>%
+    summarise(year     = max(year) + 1, 
+              coverage = mean(coverage)) %>%
+    ungroup() %>%
     # KEY ASSUMPTION: Repeat coverage for most recent years...
-    select(-year) %>%
-    expand_grid(year = extrap_years) %>%
+    expand_grid(extrap_year = o$years) %>%
+    group_by(d_v_a_id, country) %>%
+    filter(extrap_year >= year) %>%
+    ungroup() %>%
+    select(d_v_a_id, country, age,
+           year = extrap_year, coverage) %>%
     # Append cohort size and calculate FVPs...
     left_join(y  = table("wpp_pop"), 
               by = c("country", "year", "age")) %>%
     rename(cohort = pop) %>%
-    mutate(fvps = cohort * coverage) %>%
+    mutate(fvps   = cohort * coverage, 
+           source = "wiise") %>%
     # Tidy up...
     select(all_names(coverage_dt)) %>%
     arrange(d_v_a_id, country, year, age) %>%
@@ -547,8 +576,8 @@ wholecell_acellular_switch = function(coverage_dt) {
   
   # IDs of both wholecell and acellular pertussis vaccines
   id = list(
-    wp = table("d_v_a")[vaccine == "wPer3", d_v_a_id], 
-    ap = table("d_v_a")[vaccine == "aPer3", d_v_a_id])
+    wp = table("d_v_a")[vaccine == "wper", d_v_a_id], 
+    ap = table("d_v_a")[vaccine == "aper", d_v_a_id])
   
   # Only a subset of that defined should be acelluar
   acellular_dt = coverage_dt %>%

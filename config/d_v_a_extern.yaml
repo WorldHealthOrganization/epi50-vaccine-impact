@@ -4,26 +4,26 @@
 table:
 
 - d_v_a_id: 101
-  disease: Measles
-  vaccine: MCV1
+  disease: measles
+  vaccine: mcv1
   activity: routine
   
 - d_v_a_id: 102
-  disease: Measles
-  vaccine: MCV2
+  disease: measles
+  vaccine: mcv2
   activity: routine
   
 - d_v_a_id: 103
-  disease: Measles
-  vaccine: Measles
+  disease: measles
+  vaccine: measles
   activity: campaign
   
 - d_v_a_id: 104
-  disease: Polio
-  vaccine: IPV
+  disease: polio
+  vaccine: ipv
   activity: all
   
 - d_v_a_id: 105
-  disease: Polio
-  vaccine: OPV
+  disease: polio
+  vaccine: opv
   activity: all
