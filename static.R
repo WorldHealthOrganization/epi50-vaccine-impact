@@ -16,7 +16,7 @@ run_static = function() {
   
   message("* Estimating static model vaccine impact")
   
-  # Pathogens diseases of interest (those statically modelled)
+  # Diseases of interest (those statically modelled)
   diseases = unique(table("d_v_a")[source == "static", disease])
   
   # Associated full names
@@ -60,6 +60,7 @@ effective_coverage = function(disease) {
   # 2) Number of people covered with different vaccine / schedules
   # 3) Weight immunity by primary & booster dosing
   
+  # Schedule dictionary
   schedule_id = c(
     x  = "primary",
     bx = "booster", 
@@ -130,7 +131,7 @@ effective_coverage = function(disease) {
   # Then deal with vaccines given during pregnancy
   vaccines_px = vaccine_dt[schedule == "pregnancy", vaccine]
   
-  # # Iterate through these vaccines
+  # Iterate through these vaccines
   for (vaccine in vaccines_px) {
     
     message("  - ", names[v == vaccine, x])
@@ -160,7 +161,7 @@ effective_coverage = function(disease) {
     # Second effect: on the neonate(s)...
     message("   ~ Effect on neo-nates")
     
-    # Neonates covered
+    # Neonates covered - assuming one birth per pregnancy
     neonate_coverage = mother_coverage %>%
       lazy_dt() %>%
       group_by(country, year) %>%

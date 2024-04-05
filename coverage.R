@@ -275,7 +275,7 @@ coverage_wiise = function(vimc_countries_dt) {
     select(d_v_a_id) %>%
     expand_grid(table("wpp_fertility")) %>%
     # Remove trivial values...
-    filter(fertility > 1e-6) %>%
+    filter(fertility > 0) %>%
     group_by(country, year) %>%
     mutate(fertility = fertility / sum(fertility)) %>%
     ungroup() %>%

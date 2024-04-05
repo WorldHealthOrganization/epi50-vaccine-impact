@@ -5,38 +5,28 @@ table:
 
 - metric: pop
   var: "pop"
-  country_code: 4
-  country_name: "Afghanistan"
-  region: EMRO
+  file: "pop"
+  scale: 1000
+  proj: yes
+  age: yes
   
-# - country: AGO
-#   country_code: 24
-#   country_name: "Angola"
-#   region: AFRO
+- metric: deaths
+  var: "mxB"
+  file: "mx"
+  scale: "pop"
+  proj: no
+  age: yes
   
+- metric: life_exp
+  var: "e0B"
+  file: "e0"
+  scale: 1
+  proj: yes
+  age: no
   
-
-    # pop = list(
-    #   var   = "pop",
-    #   file  = "pop",
-    #   scale = 1e3,
-    #   proj  = TRUE,
-    #   age   = TRUE),
-    # deaths = list(
-    #   var   = "mxB",
-    #   file  = "mx",
-    #   scale = "pop",
-    #   proj  = FALSE,
-    #   age   = TRUE),
-    # life_exp = list(
-    #   var   = "e0B", 
-    #   file  = "e0", 
-    #   scale = 1, 
-    #   proj  = TRUE, 
-    #   age   = FALSE), 
-    # fertility = list(
-    #   var  = "pasfr", 
-    #   file = "percentASFR", 
-    #   scale = 0.01, 
-    #   proj  = FALSE, 
-    #   age   = TRUE))
+- metric: fertility
+  var: "pasfr"
+  file: "percentASFR"
+  scale: 0.01
+  proj: no
+  age: yes

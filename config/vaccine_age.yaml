@@ -58,7 +58,7 @@ table:
   age: 0
   
 - vaccine: mcv1
-  age: 1
+  age: 0
   
 - vaccine: mcv2
   age: 4

@@ -3,20 +3,20 @@
 # Creates datatable: region_dict_table
 table:
 
-- region: AFRO
+- region: AFR
   region_name: "African region"
   
-- region: EMRO
-  region_name: "Eastern Mediterranean region"
-  
-- region: EURO
-  region_name: "European region"
-  
-- region: PAHO
+- region: AMR
   region_name: "Region of the Americas"
   
-- region: SEARO
+- region: EMR
+  region_name: "Eastern Mediterranean region"
+  
+- region: EUR
+  region_name: "European region"
+  
+- region: SEAR
   region_name: "South-East Asia region"
   
-- region: WPRO
+- region: WPR
   region_name: "Western Pacific region"

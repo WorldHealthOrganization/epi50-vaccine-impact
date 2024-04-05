@@ -75,7 +75,8 @@ packages = c(
   "dotwhisker",     # Plotting functionality
   "cowplot",     # Plotting functionality
   "pals",           # Colour palettes
-  "colorspace")     # Colour palettes
+  "colorspace",     # Colour palettes
+  "svglite")        # Figure saving
 
 # List of all packages only available from github
 gh_packages = c(

@@ -60,12 +60,12 @@ colours_who_region = function() {
   
   # 1 colour per region
   colours = c(
-    AFRO  = "#6363c0",
-    EMRO  = "#bd53bd",
-    EURO  = "#008dc9",
-    PAHO  = "#f26829",
-    SEARO = "#40bf73",
-    WPRO  = "#f4a81d")
+    AFR  = "#6363c0",
+    AMR  = "#f26829",
+    EMR  = "#bd53bd",
+    EUR  = "#008dc9",
+    SEAR = "#40bf73",
+    WPR  = "#f4a81d")
   
   return(colours)
 }

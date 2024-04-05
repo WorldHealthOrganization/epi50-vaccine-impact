@@ -37,21 +37,6 @@ as_named_dt = function(x, new_names) {
 }
 
 # ---------------------------------------------------------
-# Supress errors - use with mclapply do not disrupt other jobs
-# ---------------------------------------------------------
-suppress_errors = function(x, fn, ...) {
-  
-  # Wrap a try-catch within suppress warning
-  result = suppressWarnings(
-    tryCatch(
-      expr  = fn(x, ...), 
-      error = function(e) 
-        return(NULL)))
-  
-  return(result)
-}
-
-# ---------------------------------------------------------
 # Clear the console
 # ---------------------------------------------------------
 clc = function() cat("\014")
@@ -222,6 +207,17 @@ format_date = function(dates, convert = "ymd") {
   dates = parse_date_time(dates, styles)
   dates = get(convert)(dates)
   return(dates)
+}
+
+# ---------------------------------------------------------
+# Interpolate time series trends
+# ---------------------------------------------------------
+interp_ts_trend = function(dt) {
+  interp_dt = dt %>%
+    model(lm = TSLM(log(value) ~ trend())) %>%
+    interpolate(dt)
+  
+  return(interp_dt)
 }
 
 # ---------------------------------------------------------

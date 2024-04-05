@@ -1,0 +1,64 @@
+---
+
+# Creates datatable: gapminder_dict_table
+table:
+
+- var: gini
+  file: "gapminder_gini"
+
+- var: gdp
+  file: "gdppercapita_us_inflation_adjusted"
+
+- var: lit_female
+  file: "literacy_rate_adult_female_percent_of_females_ages_15_above"
+
+- var: lit_male
+  file: "literacy_rate_adult_male_percent_of_males_ages_15_and_above"
+
+- var: doctors_per_1000 
+  file: "medical_doctors_per_1000_people"
+
+- var: underwt_children 
+  file: "underweight_children"
+
+- var: pop_0to14
+  file: "population_aged_0_14_years_both_sexes_percent"
+
+- var: pop_density 
+  file: "population_density_per_square_km"
+
+- var: urban_percent
+  file: "urban_population_percent_of_total"
+
+- var: rural_poverty
+  file: "rural_poverty_percent_rural_people_below_national_rural"
+
+- var: hiv_prev
+  file: "adults_with_hiv_percent_age_15_49"
+
+- var: hiv_mortality
+  file: "annual_hiv_deaths_number_all_ages"
+
+- var: maternal_mortality
+  file: "maternal_mortality_ratio_who"
+
+- var: health_spending
+  file: "total_health_spending_per_person_us"
+
+- var: private_health
+  file: "private_share_of_total_health_spending_percent"
+
+- var: basic_sanitation
+  file: "at_least_basic_sanitation_overall_access_percent"
+
+- var: basic_water
+  file: "at_least_basic_water_source_overall_access_percent"
+
+- var: hdi
+  file: "hdi_human_development_index"
+
+- var: attended_births
+  file: "births_attended_by_skilled_health_staff_percent_of_total"
+
+# - var: internet_users
+#   file: "internet_users"

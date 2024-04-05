@@ -11,23 +11,30 @@
 # ---------------------------------------------------------
 # Parent function for regression modelling
 # ---------------------------------------------------------
-run_regression = function(case) {
+run_regression = function(case, metric) {
   
   # Only continue if specified by do_step
   if (case == "impute" & !is.element(4, o$do_step)) return()
   if (case == "infer"  & !is.element(7, o$do_step)) return()
   
-  message("* Running regression process: ", case)
+  message("* Running regression: ", case, " ", metric)
   
-  # TODO: Repeat process for DALYs
+  # TEMP: Use basic or full imputation method
+  #
+  # OPTIONS:
+  #  basic_regression   - IA2030 method using GBD covariates
+  #  perform_regression - Helen's time series regression, refactored code
+  method = "basic_regression"
   
-  # Create set of models to evaluate
-  list[models, covars] = define_models(case)
+  # TEMP: Ignoring problematic cases for now
+  ignore = NULL 
+  # c(7, 11, 14,  # Non-routine, small numbers
+  # 16, 18, 22)  # DTP boosters causing problems
+  
+  # ---- Load data ----
   
   # Load response variable (impact per FVP)
-  target = get_regression_data(case)
-  
- # browser()
+  target = get_regression_data(case, metric)
   
   # Return out if no training data identified
   if (nrow(target) == 0)
@@ -35,23 +42,10 @@ run_regression = function(case) {
   
   # ---- Perform regression ----
   
-  # TEMP: Use basic or full imputation method
-  #
-  # OPTIONS:
-  #  basic_regression - IA2030 method using GBD covariates
-  #  perform_regression - Helen's time series regression method
-  #  perform_regression2 - Same as Helen's method, refactored code
-  method = "perform_regression2"
-  
   # Which sources of public health impact are to be modelled
   if (case == "impute") use_sources = qc(vimc)
   if (case == "infer")  use_sources = qc(vimc, static, extern)
   
-  # TEMP: Ignoring problematic cases for now
-  ignore = c(7, 11, 14,   # Non-routine, small numbers
-             16, 18, 22,  # DTP boosters causing problems
-             25)          # Polio results not ready yet
-             
   # Call country imputation function
   predict_dt = table("d_v_a") %>%
     filter(source %in% use_sources) %>%
@@ -60,12 +54,13 @@ run_regression = function(case) {
     # Apply geographical imputation model...
     pull(d_v_a_id) %>%
     lapply(FUN = get(method), 
-           models = models, 
-           covars = covars, 
            target = target, 
-           case   = case) %>%
+           case   = case, 
+           metric = metric) %>%
     rbindlist() %>%
     select(d_v_a_id, country, year, impact_impute)
+  
+  # ---- Use regression to impute missing countries ----
   
   # Apply imputations where needed
   # 
@@ -88,7 +83,7 @@ run_regression = function(case) {
     mutate(impact = pmin(impact, 1))  # HCJ: This can be removed when fitting looks good
   
   # Save imputed results to file
-  save_rds(impute_dt, case, case, "result")
+  save_rds(impute_dt, case, case, metric, "result")
   
   # ---- Plot results ----
   
@@ -126,28 +121,13 @@ define_models = function(case) {
     cov2  = "log(coverage_minus_2)", 
     cov3  = "log(coverage_minus_3)", 
     cov4  = "log(coverage_minus_4)", 
-    doc   = "doctors_per_1000",
-    hiv   = "hiv_mortality",
-    wat   = "basic_water",
-    san   = "basic_sanitation",
     pop14 = "pop_0to14", 
-    dens  = "pop_density",
-    gini0 = "gini",
-    gini1 = "gini_minus_1", 
-    gini2 = "gini_minus_2", 
-    hdi   = "HDI", 
+    gini  = "gini", 
+    hdi   = "hdi", 
     ab    = "attended_births", 
-    lit_m_a  = "male_adult_literacy",
-    lit_f_a  = "female_adult_literacy", 
-    lit_m_y  = "male_youth_literacy", 
-    lit_f_y  = "female_youth_literacy", 
-    phs0  = "private_health", 
-    phs1  = "private_health_minus_1", 
-    phs2  = "private_health_minus_2", 
     hs0   = "health_spending", 
     hs1   = "health_spending_minus_1", 
-    hs2   = "health_spending_minus_2",
-    int   = "internet_users")
+    hs2   = "health_spending_minus_2")
   
   # Define models (using shorthand covariate references)
   models = list(
@@ -156,17 +136,17 @@ define_models = function(case) {
     impute = list(
       m1  = "cov0", 
       m2  = "cov0 + cov1", 
-      m3  = "cov0 + cov1 + lit_f_a", 
-      m4  = "cov0 + cov1 + lit_m_a", 
-      m5  = "cov0 + cov1 + ab", 
-      m6  = "cov0 + cov1 + gini0",
-      m7  = "cov0 + cov1 + wat",
-      m8  = "cov0 + cov1 + pop14 + gini0 + gini1 + lit_f_a + lit_m_a + wat", 
-      m9  = "cov0 + cov1 + pop14 + gini + lit_f_a + wat",
-      m10 = "cov0 + cov1 + pop14 + gini0 + gini1 + lit_f_a + wat",
-      m11 = "cov0 + cov1 + pop14 + gini0 + gini1 + lit_f_a", 
-      m12 = "cov0 + cov1 + pop14 + gini + lit_f_a + lit_m_a",
-      m13 = "cov0 + cov1 + pop14 + gini + lit_f_a"), 
+      m3  = "cov0 + cov1 + cov2", 
+      m4  = "cov0 + cov1 + cov2 + cov3", 
+      m5  = "cov0 + cov1 + cov2 + cov3 + cov4", 
+      # m6  = "cov0 + cov1 + cov2",
+      m7  = "cov0 + cov1 + cov2 + cov3 + cov4 + pop14 + gini", 
+      m8  = "cov0 + cov1 + cov2 + cov3 + cov4 + pop14 + gini + ab", 
+      # m9  = "cov0 + cov1 + cov2 + cov3 + cov4 + pop14 + gini + ab",
+      m10 = "cov0 + cov1 + cov2 + cov3 + hdi + pop14 + gini", 
+      m11 = "cov0 + cov1 + cov2 + hdi + pop14 + gini", 
+      m12 = "cov0 + cov1 + hdi + pop14 + gini", 
+      m13 = "cov0 + hdi + pop14 + gini"), 
     
     # Models for inferring key drivers of impact 
     infer = list(
@@ -180,7 +160,7 @@ define_models = function(case) {
 # ---------------------------------------------------------
 # Load/calculate target variable (impact per FVP)
 # ---------------------------------------------------------
-get_regression_data = function(case) {
+get_regression_data = function(case, metric) {
   
   # Population size of each country over time
   pop_dt = table("wpp_pop") %>%
@@ -193,12 +173,12 @@ get_regression_data = function(case) {
   # Impact estimates in imputation case: VIMC pathogens, VIMC countries
   if (case == "impute") {
     outcomes_dt = table("vimc_estimates") %>%
-      rename(impact = deaths_averted)
+      rename(impact = !!paste1(metric, "averted"))
   }
   
   # Impact estimates in imputation case: all modelled results
   if (case == "infer")
-    outcomes_dt = read_rds("history", "deaths_averted")
+    outcomes_dt = read_rds("history", metric, "averted")
   
   # TODO: Probably best to remove previously imputed estimates in the infer case
   
@@ -251,7 +231,7 @@ get_regression_data = function(case) {
     mutate(target = impact_cum / fvps_cum)
   
   # Save this datatable to file for plotting purposes
-  save_rds(target_dt, case, case, "target")
+  save_rds(target_dt, case, case, metric, "target")
   
   # Throw a warning if no target data identified
   if (nrow(target_dt) == 0)
@@ -263,7 +243,7 @@ get_regression_data = function(case) {
 # ---------------------------------------------------------
 # Perform regression (IA2030 style approach)
 # ---------------------------------------------------------
-basic_regression = function(d_v_a_id, models, covars, target, case) {
+basic_regression = function(d_v_a_id, target, case, metric) {
   
   # Details of this d_v_a
   d_v_a_name = data.table(d_v_a_id = d_v_a_id) %>%
@@ -271,7 +251,7 @@ basic_regression = function(d_v_a_id, models, covars, target, case) {
     pull(d_v_a_name)
   
   # Display progress message to user
-  message(" - ", d_v_a_name)
+  message(" > ", d_v_a_name)
   
   # ---- Append covariates ----
   
@@ -284,13 +264,23 @@ basic_regression = function(d_v_a_id, models, covars, target, case) {
     mutate(imr = deaths / pop) %>%
     select(country, year, imr)
   
+  # Compile datatable of covariates
+  covariates_dt = table("regression_covariates") %>%
+    filter(metric %in% c("haqi", "sdi")) %>%
+    pivot_wider(names_from = metric) %>%
+    full_join(y  = infant_mortality_dt, 
+              by = c("country", "year")) %>%
+    arrange(country, year) %>%
+    group_by(country) %>%
+    fill(haqi, .direction = "up") %>%
+    ungroup() %>%
+    as.data.table()
+  
   # Append covariates to target
   target_dt = target %>%
     filter(d_v_a_id == !!d_v_a_id) %>%
     # Append GBD indices and infant mortality...
-    left_join(y  = table("gbd_covariates"),
-              by = c("country", "year")) %>%
-    left_join(y  = infant_mortality_dt,
+    left_join(y  = covariates_dt,
               by = c("country", "year")) %>%
     # Calculate n years of estimates...
     mutate(n_years = 1) %>%
@@ -332,7 +322,7 @@ basic_regression = function(d_v_a_id, models, covars, target, case) {
     fit = list(data = data_dt, result = NULL)
     
     # Save to file
-    save_rds(fit, "impute", "impute", d_v_a_id)
+    save_rds(fit, "impute", "impute", metric, d_v_a_id)
     
     return()
   }
@@ -355,7 +345,7 @@ basic_regression = function(d_v_a_id, models, covars, target, case) {
   a = rowMins(data_mat)
   b = rowMaxs(data_mat)
   
-  # Use these min and max values to normalise
+  # Use these min ana max values to normalise
   norm_data_dt = transform_fn(data_mat, a, b)
   norm_pred_dt = transform_fn(pred_mat, a, b)
   
@@ -394,548 +384,15 @@ basic_regression = function(d_v_a_id, models, covars, target, case) {
     result  = result_dt)
   
   # Save to file
-  save_rds(fit, "impute", "impute", d_v_a_id)
+  save_rds(fit, case, case, metric, d_v_a_id)
   
   return(result_dt)
 }
 
 # ---------------------------------------------------------
-# Perform regression (Helen's original version)
+# Perform regression
 # ---------------------------------------------------------
-perform_regression = function(d_v_a_id, models, covars, target, case) {
-  browser()
-  
-  # Extract name of this d-v-a
-  d_v_a_name = table("d_v_a") %>%
-    filter(d_v_a_id == !!d_v_a_id) %>%
-    pull(d_v_a_name)
-  
-  message(" - ", d_v_a_name)
-  
-  # ---- Append covariates ----
-  
-  # Summarise vaccination coverage by country and year
-  coverage_dt = table("coverage") %>%
-    # Convert from v-a ID to d-v-a ID
-    left_join(y  = table("v_a"), 
-              by = "v_a_id") %>%
-    left_join(y  = table("d_v_a"), 
-              by = c("vaccine", "activity")) %>%
-    filter(d_v_a_id == !!d_v_a_id) %>%
-    # This is coverage by age group. We recalculate for whole population
-    group_by(country, year) %>%
-    summarise(total_fvps = sum(fvps),
-              total_pop  = sum(cohort)) %>%
-    ungroup() %>%
-    mutate(coverage = total_fvps / total_pop) %>%
-    select(-total_fvps, -total_pop)
-  
-  # Append covariates to target
-  target_dt = target %>%
-    filter(d_v_a_id == !!d_v_a_id) %>%
-    # Append vaccination coverage, GBD covariates and Gapminder covariates
-    full_join(y = coverage_dt,  
-              by = c("country", "year")) %>%
-    full_join(y  = table("gbd_covariates"),
-              by = c("country", "year")) %>%
-    full_join(y  = table("gapminder_covariates"),    #TODO: multiple entries for COD(Congo, Kinshasa)
-              by = c("country", "year"), relationship = "many-to-many") %>%
-    arrange(country, year) %>%
-    # @HCJ - wasn't sure what was happening with this grouping, assuming we want d_v_a_id to be consistent?
-    # Summarise to single row for each d_v_a_id per country per year (accounting for new v_a_id functionality)
-    mutate(d_v_a_id = !!d_v_a_id) %>%  # @HCJ - I (AJS) added this line
-    group_by(country, d_v_a_id, year) %>%
-    filter(row_number() == 1) %>%
-    ungroup() %>%
-    # Create dummy variables for historic coverage (NA prior to our data)
-    mutate(coverage_minus_1 = lag(coverage, 1),
-           coverage_minus_2 = lag(coverage, 2),
-           coverage_minus_3 = lag(coverage, 3),
-           coverage_minus_4 = lag(coverage, 4),
-           coverage_minus_5 = lag(coverage, 5),
-           coverage_minus_6 = lag(coverage, 6),
-           coverage_minus_7 = lag(coverage, 7),
-           coverage_minus_8 = lag(coverage, 8)) %>%
-
-    # Create dummy variables for historic health_spending (NA prior to our data)
-    mutate(health_spending_minus_1 = lag(health_spending, 1),
-           health_spending_minus_2 = lag(health_spending, 2),
-           health_spending_minus_3 = lag(health_spending, 3),
-           health_spending_minus_4 = lag(health_spending, 4),
-           health_spending_minus_5 = lag(health_spending, 5),
-           health_spending_minus_6 = lag(health_spending, 6),
-           health_spending_minus_7 = lag(health_spending, 7),
-           health_spending_minus_8 = lag(health_spending, 8)) %>%
-    as_tsibble(index = year, key = c(country, d_v_a_id)) 
-  
-  # Convert to tsibble format for time series regression by country
-  data_dt = target_dt %>%
-    filter(!is.na(target)) %>% 
-    # Remove zeros to allow for log transformation
-    filter(target != 0) %>%
-    
-    # TODO: Activate this functionality (will need to select appropriate model downstream for comparing time periods)
-    # Please extend to allow fitting to the temporally extrapolated data -> useful messages on determinants of vaccine impact over time 
-    
-    # Set time periods
-    mutate(period = case_when(year < 1984 ~ 1,
-                              year >= 1984 & year < 1994 ~ 2,
-                              year >= 1994 & year < 2004 ~ 3,
-                              year >= 2004 & year < 2014 ~ 4,
-                              year >= 2014 & year < 2024 ~ 5)) %>%
-    
-    # Prepare to fit a model to each country / d_v_a_id combination
-    as_tsibble(index = year, key = c(country,d_v_a_id)) %>%
-    
-    # TODO: Here is the option to fit models for each decade, for each country, for each d_v_a. There may be issues with data completeness for some combinations
-    #as_tsibble(index = year, key = c(country,d_v_a_id, period)) %>%
-    
-    group_by(country) %>%
-    filter(n() > 4) %>% # remove if fewer than 4 non-zero values for a given country (insufficient for fitting)
-    ungroup()
-  
-  # ---- Create array of models ----
-  
-  # Stepwise regression
-  # TODO LATER: Update to lasso regularisation for optimal predictor selection
-  # TODO LATER: Call sets of predictors from table and not write out this long way (see broom)
-  
-  # Model 1: log(coverage)
-  model_1 =  data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage))) %>%
-    mutate(model_number = 1) 
-  
-  model_report_1 = report(model_1) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 1) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_1 = model_1 %>% 
-    tidy() %>% # Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 1) 
-  
-  # Model 2: log(coverage), log(coverage_minus_1)
-  model_2 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) 
-    )) %>%
-    mutate(model_number = 2)
-  
-  model_report_2 = report(model_2) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 2) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_2 = model_2 %>% 
-    tidy() %>% # Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 2) 
-  
-  # Model 3: log(coverage), log(coverage_minus_1), log(coverage_minus_2)
-  model_3 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) +
-                        log(coverage_minus_2) 
-    )) %>%
-    mutate(model_number = 3)
-  
-  model_report_3 = report(model_3) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 3) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_3 = model_3 %>% 
-    tidy() %>% # Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 3) 
-  
-  # Model 4: log(coverage), log(coverage_minus_1), log(coverage_minus_2), log(coverage_minus_3)
-  model_4 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) +
-                        log(coverage_minus_2) +
-                        log(coverage_minus_3) 
-    )) %>%
-    mutate(model_number = 4)
-  
-  model_report_4 = report(model_4) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 4) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  
-  model_fit_4 = model_4 %>% 
-    tidy() %>% # Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 4) 
-  
-  # Model 5: log(coverage), log(coverage_minus_1), log(coverage_minus_2), log(coverage_minus_3), log(coverage_minus_4)
-  model_5 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) +
-                        log(coverage_minus_2) +
-                        log(coverage_minus_3) +
-                        log(coverage_minus_4) 
-    )) %>%
-    mutate(model_number = 5)
-  
-  model_report_5 = report(model_5) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 5) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_5 = model_5 %>% 
-    tidy() %>% # Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 5) 
-  
-  # Model 6: log(coverage), log(coverage_minus_1), log(coverage_minus_2), log(coverage_minus_3), log(coverage_minus_4), HDI
-  model_6 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) +
-                        log(coverage_minus_2) +
-                        log(coverage_minus_3) +
-                        log(coverage_minus_4) +
-                        HDI 
-    )) %>%
-    mutate(model_number = 6)
-  
-  model_report_6 = report(model_6) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 6) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_6 = model_6 %>% 
-    tidy() %>% # Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 6) 
-  
-  # Model 7: log(coverage), log(coverage_minus_1), log(coverage_minus_2), log(coverage_minus_3), log(coverage_minus_4), HDI, pop_0to14
-  model_7 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) +
-                        log(coverage_minus_2) +
-                        log(coverage_minus_3) +
-                        log(coverage_minus_4) +
-                        HDI +
-                        pop_0to14 
-    )) %>%
-    mutate(model_number = 7)
-  
-  model_report_7 = report(model_7) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 7) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_7 = model_7 %>% 
-    tidy() %>% # Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 7) 
-  
-  # Model 8: log(coverage), log(coverage_minus_1), log(coverage_minus_2), log(coverage_minus_3), log(coverage_minus_4), HDI, pop_0to14, gini
-  model_8 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) +
-                        log(coverage_minus_2) +
-                        log(coverage_minus_3) +
-                        log(coverage_minus_4) +
-                        HDI +
-                        pop_0to14 +
-                        gini
-    )) %>%
-    mutate(model_number = 8)
-  
-  model_report_8 = report(model_8) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 8) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_8 = model_8 %>% 
-    tidy() %>% # Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 8) 
-  
-  # Model 9: log(coverage), log(coverage_minus_1), log(coverage_minus_2), log(coverage_minus_3), log(coverage_minus_4), HDI, pop_0to14, attended_births, gini
-  model_9 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) +
-                        log(coverage_minus_2) +
-                        log(coverage_minus_3) +
-                        log(coverage_minus_4) +
-                        HDI +
-                        pop_0to14 +
-                        attended_births +
-                        gini
-    )) %>%
-    mutate(model_number = 9)
-  
-  model_report_9 = report(model_9) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 9) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_9 = model_9 %>% 
-    tidy() %>% # Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 9) 
-  
-  # Model 10: log(coverage), log(coverage_minus_1), log(coverage_minus_2), log(coverage_minus_3), HDI, pop_0to14,  gini
-  model_10 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) +
-                        log(coverage_minus_2) +
-                        log(coverage_minus_3) +
-                        HDI +
-                        pop_0to14 +
-                        #  attended_births +
-                        gini
-    )) %>%
-    mutate(model_number = 10)
-  
-  model_report_10 = report(model_10) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 10) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_10 = model_10 %>%
-    tidy() %>%# Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number =10)
-  
-  # Model 11: log(coverage), log(coverage_minus_1), log(coverage_minus_2), HDI, pop_0to14,  gini
-  model_11 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) +
-                        log(coverage_minus_2) +
-                        HDI +
-                        pop_0to14 +
-                        #attended_births +
-                        gini
-    )) %>%
-    mutate(model_number = 11)
-  
-  model_report_11 = report(model_11) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 11) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_11 = model_11 %>% 
-    tidy() %>%# Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 11)
-  
-  # Model 12: log(coverage), log(coverage_minus_1), HDI, pop_0to14, gini
-  model_12 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        log(coverage_minus_1) +
-                        HDI +
-                        pop_0to14 +
-                        gini
-    )) %>%
-    mutate(model_number = 12)
-  
-  model_report_12 = report(model_12) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 12) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_12 = model_12 %>% 
-    tidy() %>%# Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 12)
-  
-  # Model 13: log(coverage), HDI, pop_0to14, gini
-  model_13 = data_dt %>%
-    model(tslm = TSLM(log(target) ~ log(coverage) +
-                        HDI +
-                        pop_0to14 +
-                        gini
-    )) %>%
-    mutate(model_number = 13)
-  
-  model_report_13 = report(model_13) %>% # Glance of fit stats inc R-squared, p-value, AIC, AICc etc.
-    mutate(model_number = 13) %>%
-    select(-c(r_squared, adj_r_squared, sigma2, statistic, AIC, BIC, CV, deviance, df.residual, rank))
-  
-  model_fit_13 = model_13 %>%
-    tidy() %>%# Arrange in tidy format for easy access of estimates, p-values etc.
-    mutate(model_number = 13)
-  
-  # ---- Model selection ----
-  
-  # For each country, select the model with the best AICc (lowest number)
-  model_choice = rbind(model_report_1,
-                       model_report_2,
-                       model_report_3,
-                       model_report_4,
-                       model_report_5,
-                       model_report_6,
-                       model_report_7,
-                       model_report_8,
-                       model_report_9,
-                       model_report_10,
-                       model_report_11,
-                       model_report_12,
-                       model_report_13) %>%
-    arrange(country) %>%
-    group_by(country) %>%
-    filter(!is.infinite(AICc)) %>% # remove null models
-    slice_min(AICc, with_ties = FALSE) %>% # if two models are equally the best, keep the first
-    select(-c(.model, df, log_lik, p_value))
-  
-  # Extract parameters of best fitting model for each country (according to AICc)
-  model_fit = rbind(model_fit_1,
-                    model_fit_2,
-                    model_fit_3,
-                    model_fit_4,
-                    model_fit_5,
-                    model_fit_6,
-                    model_fit_7,
-                    model_fit_8,
-                    model_fit_9,
-                    model_fit_10,
-                    model_fit_11,
-                    model_fit_12,
-                    model_fit_13)
-  
-  model_fit = left_join(model_choice, model_fit, by=c("country", "model_number"))
-  
-  # Extract best fitting model for each country (according to AICc)
-  all_models = rbind(model_1,
-                     model_2,
-                     model_3,
-                     model_4,
-                     model_5,
-                     model_6,
-                     model_7,
-                     model_8,
-                     model_9,
-                     model_10,
-                     model_11,
-                     model_12,
-                     model_13)
-  
-  best_model = left_join(model_choice, all_models, by=c("country", "model_number", "d_v_a_id")) %>%
-    as_mable(key = c(country, d_v_a_id), model = tslm)
-  
-  # Link model output back to WHO region
-  regions = as.data.frame(target_dt) %>% select(country, region_short) %>% unique()
-  model_fit = inner_join(x=regions, y=model_fit, by="country")
-  model_choice = inner_join(x=regions, y=model_choice, by='country')
-  
-  # ---- Diagnostic plotting ----
-  
-  ## TODO: Plot to move to plotting.R
-  # Explore model selection by region
-  ggplot(data = model_choice, aes(x = model_number)) +
-    geom_histogram(binwidth = 1) +
-    facet_wrap(~region_short)
-  
-  #TODO: Plot to move to plotting.R, fix for d_v_a_name, prettify
-  # Plot data vs. fitted for all countries (model fit)
-  plot_df = augment(best_model)
-  
-  ggplot(data = plot_df, aes(x = target, y = .fitted)) +
-    geom_point() +
-    labs(
-      y = "Fitted (predicted values)",
-      x = "Data (actual values)",
-      title = paste("Vaccine impact of", d_v_a_name)
-    ) +
-    geom_abline(intercept = 0, slope = 1) +
-    facet_wrap(~country, ncol = 21)
-  
-  #TODO: Plot to move to plotting.R, fix for d_v_a_name, prettify
-  # Plot model fit for a single country 
-  plot_df = augment(best_model) %>%
-    filter(country == "HND")
-  
-  ggplot(data = plot_df, aes(x = year)) +
-    geom_point(aes(y = target, colour = "Data")) +
-    geom_line(aes(y = .fitted, colour = "Fitted")) +
-    labs(y = NULL,
-         title = paste("Vaccine impact of", d_v_a_name, "in", plot_df$country)
-    ) +
-    scale_colour_manual(values=c(Data="black",Fitted="#D55E00")) +
-    guides(colour = guide_legend(title = NULL))
-  
-  #TODO: Plot to move to plotting.R, fix for d_v_a_name, prettify
-  # Plot model fit for all countries
-  plot_df = augment(best_model)
-  
-  ggplot(data = plot_df, aes(x = year)) +
-    geom_point(aes(y = target, colour = "Data")) +
-    geom_line(aes(y = .fitted, colour = "Fitted")) +
-    labs(y = NULL,
-         title = paste("Vaccine impact of", d_v_a_name)
-    ) +
-    scale_colour_manual(values=c(Data="black",Fitted="#D55E00")) +
-    guides(colour = guide_legend(title = NULL))  +
-    facet_wrap(~country, ncol = 21)
-  
-  # Select countries for imputation
-  impute_dt = target_dt %>% filter(! country %in% data_dt$country)
-  
-  # TODO LATER: Generalise. Allow model selection for imputed country by e.g. region. For now, model 13 works well in general
-  # Model 13 is the most commonly selected, take median coefficient by WHO region (helps to avoid outliers)
-  model_fit_13 = inner_join(x=regions, y=model_fit_13, by="country")
-  
-  model_13_region = model_fit_13 %>%
-    group_by(region_short, term) %>%
-    summarise(estimate = median(estimate, na.rm = TRUE), n = n()) %>%
-    pivot_wider(names_from = term,
-                names_glue = "{term}_coefficient",
-                values_from = estimate)
-  
-  # TODO LATER: Choose most appropriate method for selecting coefficients e.g. nearest neighbours
-  # Impute target values using coefficients from WHO region
-  impute_dt = left_join(impute_dt, model_13_region, by = c("region_short")) %>%
-    mutate(estimate = exp((`log(coverage)_coefficient` * log(coverage)) +
-                            (HDI_coefficient * HDI) +
-                            (pop_0to14_coefficient * pop_0to14)+
-                            (gini_coefficient * gini))) %>% 
-    select(-c(names(model_13_region))) %>%
-    inner_join(y = regions, by = "country") 
-  
-  # Plot model fit for all countries
-  # Store fitted values for VIMC countries
-  best_model_output = augment(best_model) %>%
-    mutate(estimate = .fitted) %>%
-    select(-c(model_number, AICc, .model, .resid, .innov)) #, .fitted))
-  
-  
-  impute_output = impute_dt %>% select(country, d_v_a_id, year, estimate) %>%
-    mutate(target = NA) %>%
-    filter(!is.na(d_v_a_id))
-  
-  estimate_dt = bind_rows(best_model_output, impute_output)
-  
-  #TODO: Plot to move to plotting.R, fix for d_v_a_name, prettify
-  plot_df = estimate_dt
-  
-  ggplot(data = plot_df, aes(x = year)) +
-    geom_point(aes(y = target, colour = "Data")) +
-    # @HCJ - there was no '.fitted' var in the df, it should come from best_model_output right?
-    geom_line(aes(y = .fitted, colour = "Fitted")) +
-    labs(y = NULL,
-         title = paste("Vaccine impact of", d_v_a_name)
-    ) +
-    scale_colour_manual(values=c(Data="black",Fitted="#D55E00")) +
-    guides(colour = guide_legend(title = NULL))  +
-    facet_wrap(~country, ncol = 21)
-  
-  # ---- Compile results ----
-  
-  # Recombine estimated impact with predictor data
-  recombine_dt = full_join(data_dt, best_model_output, by = c("country", "d_v_a_id", "year")) %>% 
-    rename(target = target.x)
-  
-  # Combine original and imputed values 
-  result_dt = bind_rows(recombine_dt, impute_dt) %>%
-    # Remove predictors...
-    select(country, d_v_a_id, year, fvps_cum, impact_cum, target, estimate) %>%
-    # Multiply through to obtain cumulative impact over time...
-    mutate(impact_impute = fvps_cum * estimate, .after = impact_cum)
-  
-  covariates_dt = data_dt %>% 
-    as.data.table() %>%
-    select(c(d_v_a_id, target, coverage, HDI, gini, pop_0to14))
-  
-  # Store the fitted model, the data used, and the result
-  fit = list(
-    model   = best_model, # N.B> Only for non-imputed
-    report  = model_fit,
-    choice  = model_choice,
-    data    = covariates_dt, 
-    result  = result_dt)
-  
-  # Save to file
-  save_rds(fit, "impute", "impute", d_v_a_id)
-  
-  return(result_dt)
-}
-
-# ---------------------------------------------------------
-# Perform regression (Roo's refactored version)
-# ---------------------------------------------------------
-perform_regression2 = function(d_v_a_id, models, covars, target, case) {
+perform_regression = function(d_v_a_id, target, case, metric) {
   
   # Stepwise regression
   # TODO: Update to lasso regularisation for optimal predictor selection
@@ -946,14 +403,17 @@ perform_regression2 = function(d_v_a_id, models, covars, target, case) {
     pull(d_v_a_name)
   
   # Display progress message to user
-  message(" - ", d_v_a_name)
+  message(" > ", d_v_a_name)
+  
+  # Load set of models to evaluate
+  list[models, covars] = define_models(case)
   
   # Append all required covariates - see separate function
   target_ts = append_covariates(d_v_a_id, models, covars, target)
   
   # ---- Evaluate all user-defined models ----
   
-  message("  > Evaluating models")
+  message("  - Evaluating models")
   
   # Subset training data (which we have impact estimates for)
   data_ts = target_ts %>%
@@ -986,8 +446,8 @@ perform_regression2 = function(d_v_a_id, models, covars, target, case) {
   
   # ---- Model selection ----
   
-  message("  > Model selection")
-  browser()
+  message("  - Model selection")
+  
   # For each country, select the model with the best AICc
   model_choice = model_list %>%
     lapply(report) %>%
@@ -1010,34 +470,26 @@ perform_regression2 = function(d_v_a_id, models, covars, target, case) {
              model = tslm) %>%
     suppressWarnings()
   
-  choice =  model_choice %>%
-             as_tibble() %>%
-             count(model_id) %>%
-             slice(which.max(n)) %>%
-             pull(model_id) 
-  
   # Extract parameters of best fitting model for each country
   model_fit = tidy(model_choice) %>%
     select(d_v_a_id, country, model_id, term, 
            estimate, std.error, p.value) %>%
     as.data.table()
   
-
-  
   # ---- Predictions ----
   
-  message("  > Model predictions")
+  message("  - Model predictions")
   
   # Impute case: predict missing data using regional best models 
   if (case == "impute") {
     
-    # TODO: Generalise: allow model selection for imputed country by e.g. region. 
+    # TODO: Generalise: allow model selection for imputed country by e.g. region. For now, model 13 works well in general
     # TODO: Choose most appropriate method for selecting coefficients e.g. nearest neighbours
     
-    # TEMP: Use most commonly chosen model for this d_v_a_id
-    use_model = choice
+    # TEMP: Use model 13 (a commonly selected model) for predictions
+    use_model = "m13"
     
-    # Evaluate this model - see separate function
+    # Evaluate this model - see seperate function
     predict_dt = evaluate_predictions(
       id         = use_model, 
       model_list = model_list, 
@@ -1074,7 +526,6 @@ perform_regression2 = function(d_v_a_id, models, covars, target, case) {
            .before = 1) %>%
     as.data.table()
   
-
   # Store the data used, fitted model, and result
   fit = list(
     model  = model_choice,  # NOTE: Only for non-imputed
@@ -1083,7 +534,7 @@ perform_regression2 = function(d_v_a_id, models, covars, target, case) {
     data   = data_dt)
   
   # Save to file
-  save_rds(fit, case, case, d_v_a_id)
+  save_rds(fit, case, case, metric, d_v_a_id)
   
   return(result_dt)
 }
@@ -1153,7 +604,12 @@ append_covariates = function(d_v_a_id, models, covars, target) {
     as.data.table()
   
   # ---- Append all other covariates ----
- 
+  
+  # Spread covariates to wide format
+  covariates_dt = table("regression_covariates") %>%
+    pivot_wider(names_from = metric) %>%
+    as.data.table()
+  
   # Create time-series tibble with all covariates
   target_ts = target %>%
     # Data for this d-v-a...
@@ -1162,31 +618,14 @@ append_covariates = function(d_v_a_id, models, covars, target) {
     # Append vaccination coverage...
     full_join(y = coverage_dt,  
               by = c("country", "year")) %>%
-    # Append covariates: GBD...
-    full_join(y  = table("gbd_covariates"),
+    # Append all possible covariates...
+    full_join(y  = covariates_dt,
               by = c("country", "year")) %>%
-    # Append covariates: UNICEF...
-    full_join(y  = table("unicef_covariates"),
-              by = c("country", "year"),
-              relationship = "many-to-many") %>%
-    # Append covariates: World Bank...
-    full_join(y  = table("world_bank_covariates"),
-              by = c("country", "year"),
-              relationship = "many-to-many") %>%
-    # Append covariates: Gapminder...
-    full_join(y  = table("gapminder_covariates"),  # TODO: multiple entries for COD(Congo, Kinshasa)
-              by = c("country", "year"), 
-              relationship = "many-to-many") %>%
+    arrange(country, year) %>%
     # Append period...
     # HCJ - have I interpreted this correctly? period is a potential predictor?
-    left_join(y  = get_period(), 
-              by = "year") %>%
-    # Summarise to single row for each country per year...
-    # TODO: This shouldn't be necessary
-    arrange(country, year) %>%
-    group_by(country, year) %>%
-    slice_head(n = 1) %>%
-    ungroup() %>%
+    # left_join(y  = get_period(), 
+    #           by = "year") %>%
     # Lag any necessary covariates...
     group_by(country) %>%
     covar_lag_fn() %>%
@@ -1328,7 +767,7 @@ get_period = function() {
   # Format into full year-period datatable
   period_dt = tibble(year = o$years[year_idx]) %>%
     mutate(period = 1 : n()) %>%
-    full_join(y  = tibble(year = o$year), 
+    full_join(y  = tibble(year = o$years), 
               by = "year") %>%
     arrange(year) %>%
     fill(period, .direction = "updown") %>%

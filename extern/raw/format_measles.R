@@ -1,8 +1,10 @@
 
 # ---- Load raw results ----
 
-vaccine_dt    = fread(paste0(o$pth$extern, "epi50_measles_vaccine.csv"))
-no_vaccine_dt = fread(paste0(o$pth$extern, "epi50_measles_no_vaccine.csv"))
+raw_path = paste0(o$pth$extern, "raw")
+
+vaccine_dt    = fread(file.path(raw_path, "epi50_measles_vaccine.csv"))
+no_vaccine_dt = fread(file.path(raw_path, "epi50_measles_no_vaccine.csv"))
 
 raw_dt = vaccine_dt %>%
   select(iso, year, 
@@ -27,6 +29,28 @@ raw_dt = vaccine_dt %>%
   select(scenario, country, year, metric, value) %>%
   arrange(scenario, country, year, metric) %>%
   as.data.table()
+
+# ---- Summary of uncertainty ----
+
+uncert_dt = vaccine_dt %>%
+  select(iso, year, 
+         x  = mean_deaths, 
+         lb = lb_deaths, 
+         ub = ub_deaths) %>%
+  filter(year > min(year), 
+         x > 0) %>%
+  group_by(year) %>%
+  mutate(w = x / sum(x)) %>%
+  summarise(lower = sum((1 - (x - lb) / x) * w), 
+            upper = sum((1 - (x - ub) / x) * w)) %>%
+  ungroup() %>%
+  complete(year = o$years) %>%
+  fill(lower, upper, .direction = "downup") %>%
+  mutate(model = "measles", 
+         .before = 1) %>%
+  as.data.table()
+
+save_rds(uncert_dt, "extern", "epi50_measles_uncertainty")
   
 # ---- Age structure ----
 
@@ -88,7 +112,7 @@ impute_dt = epi50_dynamice %>%
   left_join(y  = measles_dt, 
             by = intersect(names(.), names(measles_dt))) %>%
   mutate(value = ifelse(
-    test = is.na(value) & year > min(o$year), 
+    test = is.na(value) & year > min(o$years), 
     yes  = dynamice, 
     no   = value))
 
@@ -98,7 +122,7 @@ init_dt = impute_dt %>%
   group_by(scenario, country, age, metric) %>%
   summarise(value = mean(value)) %>%
   ungroup() %>%
-  mutate(year = min(o$year)) %>%
+  mutate(year = min(o$years)) %>%
   select(all_names(measles_dt)) %>%
   as.data.table()
 

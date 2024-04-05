@@ -155,7 +155,7 @@ fn_set = function(params = FALSE, dict = FALSE) {
   # Alternative functionality - return dictionary
   if (dict == TRUE)
     out = c(
-      lin = "Linear gradiant (1 parameter)", 
+      lin = "Linear gradient (1 parameter)", 
       log = "Logarithmic growth (2 parameters)",
       exp = "Exponential growth (2 parameters)", 
       sig = "Sigmoidal growth (3 parameters)")
@@ -366,7 +366,7 @@ run_mcmc = function(fns, optim, x, y) {
       fun    = likelihood_fn, 
       burnin = o$mcmc_burnin,
       mcmc   = o$mcmc_iter,
-      thin   = 10,
+      thin   = o$mcmc_iter / o$mcmc_samples,
       tune   = 1.5,
       seed   = 1,
       theta.init   = x0, 

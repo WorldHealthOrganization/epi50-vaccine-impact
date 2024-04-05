@@ -29,8 +29,9 @@ prepare_dirs = function(o) {
   # Path to log files
   pth$log = file.path(pth$code, "log")
   
-  # Parent path of all VIMC results files
-  pth$vimc = file.path(pth$input, "vimc")
+  # Paths to VIMC and Gapminder inputs
+  pth$vimc      = file.path(pth$input, "vimc")
+  pth$gapminder = file.path(pth$input, "gapminder")
   
   # Parent path of all external model output files
   pth$extern = file.path(pth$code, "extern")

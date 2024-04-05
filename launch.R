@@ -9,8 +9,7 @@
 ###########################################################
 
 # Set working directory to sourced file
-#if (interactive()) setwd(getSrcDirectory(function() {}))
-setwd("C:\\Users\\helen\\Documents\\GitHub\\epi50-vaccine-impact")
+if (interactive()) setwd(getSrcDirectory(function() {}))
 
 # Load all required packages and functions
 source("dependencies.R")
@@ -18,7 +17,7 @@ source("dependencies.R")
 message("Running EPI50 pipeline")
 
 # Set options (see options.R)
-o = set_options(do_step = c(4))
+o = set_options(do_step = 8)
 
 # Step 1) Prepare all inputs (only needs to be done once)
 run_prepare()  # See prepare.R
@@ -30,21 +29,21 @@ run_external()  # See external.R
 run_static()  # See static.R
 
 # Step 4) Impute missing countries for VIMC-modelled pathogens
-run_regression("impute")  # See regression.R
+run_regression("impute", "deaths")  # See regression.R
+run_regression("impute", "dalys")   # See regression.R
 
 # Step 5) Fit and select impact-FVP functions
-run_impact()  # See impact.R
+run_impact("deaths")  # See impact.R  
+run_impact("dalys")   # See impact.R
 
 # Step 6) Apply impact functions to historical coverage
-run_history()  # See history.R
+run_history("deaths")  # See history.R
+run_history("dalys")   # See history.R
 
 # Step 7) Re-fit time series regression models to infer predictors
-run_regression("infer")  # See regression.R (second call)
+# run_regression("infer", "deaths")  # See regression.R
 
-# Step 8) Generate uncertainty draws
-run_uncertainty()  # See uncertainty.R
-
-# Step 9) Produce results
+# Step 8) Produce results
 run_results()  # See results.R
 
 # Finish up

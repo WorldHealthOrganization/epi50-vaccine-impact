@@ -85,95 +85,136 @@ run_history = function(metric) {
   
   message(" > Evaluating impact functions")
   
-  # Evaluate impact of relevant FVPs
-  result_fit_dt = eval_dt %>%
-    # Rename solely for use in evaluation fn...
-    rename(fvps = fvps_cum) %>%
-    evaluate_impact_function(metric = metric) %>%
-    # Convert back to meaningful names...
-    rename(fvps_cum   = fvps, 
-           impact_cum = impact) %>%
-    # Reverse cumsum to derive annual relative impact...
-    lazy_dt() %>%
-    group_by(d_v_a_id, country) %>%
-    mutate(impact_rel = rev_cumsum(impact_cum)) %>%
-    ungroup() %>%
-    # Rescale back to population scale...
-    mutate(impact_abs = impact_rel * pop) %>%
-    as.data.table()
+  # Parent function to evaluate impact functions
+  evaluate_fn = function(data, uncert) {
+    
+    # Evaluate FVPs using impact functions
+    result = data %>%
+      select(d_v_a_id, country, year, pop, fvps = fvps_cum) %>%
+      # Rename solely for use in evaluation fn...
+      evaluate_impact_function(
+        metric = metric, 
+        uncert = uncert) %>%
+      # Convert back to meaningful names...
+      rename(impact_cum = impact) %>%
+      # Reverse cumsum to derive annual relative impact...
+      lazy_dt() %>%
+      group_by(d_v_a_id, country, sample) %>%
+      mutate(impact_rel = rev_cumsum(impact_cum)) %>%
+      ungroup() %>%
+      # Rescale back to population scale...
+      mutate(impact = impact_rel * pop) %>%
+      select(d_v_a_id, country, year, sample, impact) %>%
+      as.data.table()
+    
+    return(result)
+  }
+  
+  message("  - Best estimate coefficients")
+  
+  # Evaluate impact of relevant FVPs - best fit coefficients
+  fit_best_dt = eval_dt %>%
+    evaluate_fn(uncert = FALSE) %>%
+    mutate(sample = "best")
+  
+  message("  - Posterior coefficients (", 
+          o$uncertainty_samples, " samples)")
+  
+  # Evaluate impact of relevant FVPs - uncertainty samples
+  fit_uncert_dt = eval_dt %>%
+    evaluate_fn(uncert = TRUE)
+    
+  # Concatenate results
+  fit_dt = rbind(fit_best_dt, fit_uncert_dt)
   
   # ---- Back project using initial impact ratios -----
   
   message(" > Back projecting")
   
+  # Expand all FVP datatable for each uncertainty sample
+  all_fvps_dt = fvps_dt %>%
+    select(d_v_a_id, country, year, fvps = fvps_abs) %>%
+    expand_grid(sample = unique(fit_dt$sample)) %>%
+    as.data.table()
+  
   # Initial impact per FVPs - used to back project
   #
   # NOTE: Idea behind init_impact_years is to smooth out any 
   #       initially extreme or jumpy impact ratios
-  initial_ratio_dt = result_fit_dt %>%
+  initial_ratio_dt = fit_dt %>%
     lazy_dt() %>%
-    group_by(d_v_a_id, country) %>%
+    # Join associated FVPs...
+    inner_join(y  = all_fvps_dt, 
+               by = qc(d_v_a_id, country, year, sample)) %>%
+    group_by(d_v_a_id, country, sample) %>%
     # Take the first init_impact_years years...
-    slice_min(order_by  = year, 
-              n         = o$init_impact_years, 
+    slice_min(order_by  = year,
+              n         = o$init_impact_years,
               with_ties = FALSE) %>%
     # Take the mean over these first years...
-    summarise(impact_mean = mean(impact_abs), 
-              fvps_mean   = mean(fvps_abs)) %>%
+    summarise(impact_mean = mean(impact),
+              fvps_mean   = mean(fvps)) %>%
     ungroup() %>%
     # Calculate the mean initial ratio...
     mutate(initial_ratio = impact_mean / fvps_mean) %>%
-    select(d_v_a_id, country, initial_ratio) %>%
+    select(d_v_a_id, country, sample, initial_ratio) %>%
     as.data.table()
   
   # Save initial ratio to file for diagnostic plotting
   save_rds(initial_ratio_dt, "history", "initial_ratio", metric) 
   
   # Back project by applying initial ratio 
-  back_project_dt = result_fit_dt %>%
+  back_project_dt = fit_dt %>%
     lazy_dt() %>%
-    select(d_v_a_id, country, year, impact_abs) %>%
-    # Join with full FVPs data...
-    full_join(y  = fvps_dt,
-              by = c("d_v_a_id", "country", "year")) %>%
-    select(d_v_a_id, country, year, 
-           fvps   = fvps_abs, 
-           impact = impact_abs) %>%
-    arrange(d_v_a_id, country, year) %>%
+    # Join associated FVPs...
+    full_join(y  = all_fvps_dt, 
+              by = c("d_v_a_id", "country", "year", "sample")) %>%
+    arrange(d_v_a_id, country, year, sample) %>%
     filter(!d_v_a_id %in% extern_id) %>%
     # Append impact ratio...
     left_join(y  = initial_ratio_dt, 
-              by = c("d_v_a_id", "country")) %>%
+              by = c("d_v_a_id", "country", "sample")) %>%
     replace_na(list(initial_ratio = 0)) %>%
     # Ratio of past impact assumed consistent with initial years...
     mutate(impact = ifelse(
       test = is.na(impact), 
       yes  = fvps * initial_ratio, 
       no   = impact)) %>%
-    select(d_v_a_id, country, year, impact) %>%
+    select(d_v_a_id, country, year, sample, impact) %>%
     as.data.table()
   
   # ---- Append external models ----
   
   message(" > Appending external models")
   
-  # Load up results from external models
-  extern_dt = table("extern_estimates") %>%
-    lazy_dt() %>%
-    rename(impact = !!paste1(metric, "averted")) %>%
-    # Summarise results over age...
-    group_by(d_v_a_id, country, year) %>%
-    summarise(impact = sum(impact)) %>%
-    ungroup() %>%
-    as.data.table()
+  # Uncertainty sample from external models
+  extern_uncertainty = table(paste1("extern_uncertainty", metric))
   
-  # Concatenate results from external models
-  result_dt = back_project_dt %>%
-    rbind(extern_dt) %>%
-    arrange(d_v_a_id, country, year)
+  # Concatenate for full set of samples
+  all_samples = back_project_dt %>%
+    rbind(extern_uncertainty)
+  
+  # Save all samples - allows cumulative summing in any direction
+  save_rds(all_samples, "history", "all_samples", metric) 
+  
+  # ---- Summarise uncertainty ----
+  
+  message(" > Summarising uncertainty bounds")
+  
+  # Determine uncertainty bounds for temporal results
+  result_time_dt = all_samples %>%
+    summarise_uncertainty(cumulative = FALSE)  # See uncertainty.R
+  
+  # Equivalent uncertainty bounds for cumulative results
+  #
+  # NOTE: This special case is needed as it is not legitimate 
+  #       to simply cumulatively sum temporal bounds
+  # result_cum_dt = all_samples %>%
+  #   summarise_uncertainty(cumulative = TRUE)  # See uncertainty.R
   
   # Save results to file
-  save_rds(result_dt, "history", "burden_averted", metric) 
+  save_rds(result_time_dt, "history", "burden_averted", metric) 
+  # save_rds(result_cum_dt,  "history", "cumulative_averted", metric) 
   
   # ---- Supporting results ----
   
@@ -252,7 +293,7 @@ run_history = function(metric) {
     message(" > Calculating years of life lost")
     
     # Apply age structure and calculate YLL from deaths
-    yll_dt = result_dt %>%
+    yll_samples_dt = all_samples %>%
       lazy_dt() %>%
       # Append life expectancy...
       left_join(y  = table("wpp_life_exp"), 
@@ -265,19 +306,30 @@ run_history = function(metric) {
       mutate(deaths = impact * scaler) %>%
       # Calculate years of life lost...
       mutate(yll = deaths * pmax(0, life_exp - age)) %>%
-      group_by(d_v_a_id, country, year) %>%
+      group_by(d_v_a_id, country, year, sample) %>%
       summarise(impact = sum(yll)) %>%
       ungroup() %>%
-      # Reappend FVPs for consistent formatting...
-      left_join(y  = fvps_dt, 
-                by = c("d_v_a_id", "country", "year")) %>%
-      rename(fvps = fvps_abs) %>%
-      select(all_names(result_dt)) %>%
-      arrange(d_v_a_id, country, year) %>%
       as.data.table()
     
+    # Save all samples - allows cumulative summing in any direction
+    save_rds(yll_samples_dt, "history", "all_samples_yll") 
+    
+    message("  - Summarising YLL uncertainty")
+    
+    # Determine uncertainty bounds for temporal results
+    yll_time_dt = yll_samples_dt %>%
+      summarise_uncertainty(cumulative = FALSE)  # See uncertainty.R
+    
+    # Equivalent uncertainty bounds for cumulative results
+    #
+    # NOTE: This special case is needed as it is not legitimate 
+    #       to simply cumulatively sum temporal bounds
+    # yll_cum_dt = yll_samples_dt %>%
+    #   summarise_uncertainty(cumulative = TRUE)  # See uncertainty.R
+    
     # Save results to file
-    save_rds(yll_dt, "history", "burden_averted_yll") 
+    save_rds(yll_time_dt, "history", "burden_averted_yll") 
+    # save_rds(yll_cum_dt,  "history", "cumulative_averted_yll") 
   }
   
   # ---- Plot outcomes ----
@@ -289,50 +341,23 @@ run_history = function(metric) {
 # ---------------------------------------------------------
 # Evaluate impact function given FVPs
 # ---------------------------------------------------------
-evaluate_impact_function = function(data_dt = NULL, metric = NULL) {
+evaluate_impact_function = function(data, metric, uncert = TRUE) {
   
-  # ---- Load stuff ----
-  
-  # TEMP: For now take mean, but later sample from posterior
-  coef_dt = read_rds("impact", "posteriors", metric) %>% 
-    lazy_dt() %>%
-    group_by(d_v_a_id, country, fn, param) %>% 
-    summarise(value = mean(value)) %>% 
-    ungroup() %>% 
-    arrange(d_v_a_id, country, param) %>% 
-    as.data.table()
-  
-  # ---- Interpret trivial argument ----
-  
-  # Countries to evaluate
-  if (is.null(data_dt)) {
-    
-    # Default points at which to evaluate
-    x_eval = seq(0, o$eval_x_scale, length.out = 101)
-    
-    # Construct evaluation datatable
-    data_dt = coef_dt %>%
-      select(d_v_a_id, country) %>%
-      unique() %>%
-      expand_grid(fvps = x_eval) %>%
-      as.data.table()
-  }
-  
-  # ---- Evaluate best fit model and coefficients ----
+  # ---- Evaluation functions ----
   
   # Function to valuate best coefficients
-  eval_fn = function(i, ids, fns, data, coef) {
+  eval_fn = function(i, sets, data, coef, fns) {
     
-    # Index d-v-a country ID
-    id = ids[i, ]
+    # Index this set
+    set = sets[i, ]
     
     # message(paste(id, collapse = ", "))
     
     # Exract FVPs for this ID
-    data %<>% inner_join(id, by = c("d_v_a_id", "country"))
+    data %<>% inner_join(set, by = qc(d_v_a_id, country))
     
     # Fitted function and parameters
-    coef %<>% inner_join(id, by = c("d_v_a_id", "country"))
+    coef %<>% inner_join(set, by = qc(d_v_a_id, country, sample))
     
     # Load fitted function
     fn = fns[[unique(coef$fn)]]
@@ -346,44 +371,106 @@ evaluate_impact_function = function(data_dt = NULL, metric = NULL) {
     return(result)
   }
   
+  # Wrapper function for evaluating all models for given country
+  set_fn = function(sets, data, coef, fns) {
+    
+    # Country ID of this set
+    id = unique(sets$country)
+    
+    # Apply evaluation function this set
+    result_list = lapply(
+      X    = seq_row(sets), 
+      FUN  = eval_fn,
+      sets = sets,
+      data = data[country == id], 
+      coef = coef[country == id], 
+      fns  = fns)
+    
+    # Concatenate results
+    result_dt = rbindlist(result_list)
+    
+    return(result_dt)
+  }
+  
+  # ---- Sample coefficients ----
+  
+  # Load impact function posteriors
+  posteriors = read_rds("impact", "posteriors", metric)
+  
+  # Generate uncertainty: sample posteriors
+  if (uncert == TRUE) {
+    
+    # Sample uncertainty_samples sets
+    samples = sample_vec(
+      x    = unique(posteriors$iter), 
+      size = o$uncertainty_samples)
+    
+    # Select associated coefficients
+    coef = posteriors %>% 
+      filter(iter %in% samples) %>%
+      rename(sample = iter)
+  }
+  
+  # No uncertainty: mean coefficients
+  if (uncert == FALSE) {
+    
+    # Only one sample needed
+    samples = 1
+    
+    # Take the mean of each coefficient
+    coef = posteriors %>% 
+      lazy_dt() %>%
+      group_by(d_v_a_id, country, fn, param) %>% 
+      summarise(value = mean(value)) %>% 
+      ungroup() %>% 
+      mutate(sample = samples, 
+             .before = value) %>%
+      arrange(d_v_a_id, country, param) %>% 
+      as.data.table()
+  }
+  
+  # Convert sample numbers to sample IDs
+  sample_dict = get_sample_ids(samples)
+  
+  # ---- Perform evaluations ----
+  
   # Load set of functions that may be evaluated
   fns = fn_set()
   
-  # All country - dva combos to evaluate
-  ids = data_dt %>%
+  # All sample-country-dva combos to evaluate
+  sets = data %>%
     select(d_v_a_id, country) %>%
     unique() %>%
-    inner_join(y  = coef_dt,
-               by = c("d_v_a_id", "country")) %>%
-    select(d_v_a_id, country) %>%
-    unique()
+    expand_grid(sample = samples) %>%
+    as.data.table() %>%
+    split(.$country)
   
   # Apply evaluations in parallel
   if (o$parallel$history)
     result_list = mclapply(
-      X    = seq_row(ids), 
-      FUN  = eval_fn, 
-      ids  = ids,
+      X    = sets, 
+      FUN  = set_fn, 
+      data = data, 
+      coef = coef,
       fns  = fns,
-      data = data_dt, 
-      coef = coef_dt,
       mc.cores = o$n_cores,
       mc.preschedule = FALSE)
   
   # Apply evaluations consecutively
   if (!o$parallel$history)
     result_list = lapply(
-      X   = seq_row(ids), 
-      FUN = eval_fn,
-      ids  = ids,
-      fns  = fns,
-      data = data_dt, 
-      coef = coef_dt)
+      X    = sets, 
+      FUN  = set_fn,
+      data = data, 
+      coef = coef, 
+      fns  = fns)
   
   # Squash results into single datatable
   result_dt = rbindlist(result_list) %>%
     # Transform impact to real scale...
-    mutate(impact = impact / o$impact_scaler)
+    mutate(impact = impact / o$impact_scaler) %>%
+    # Recode sample names for readability...
+    mutate(sample = recode(sample, !!!sample_dict))
   
   return(result_dt)
 }
