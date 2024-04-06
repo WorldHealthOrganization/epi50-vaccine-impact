@@ -132,10 +132,10 @@ set_options = function(do_step = NA) {
   
   # Use multiple cores to speed up several processes
   o$parallel = list(
-    interp  = TRUE,  # NOTE: Occurs in two places in preparation step
-    impute  = TRUE, 
+    interp  = FALSE,  # NOTE: Occurs in two places in preparation step
+    impute  = FALSE, 
     impact  = FALSE,  # NOTE: Having issues with shared memory
-    history = TRUE)
+    history = FALSE)
 
   # Detect number of cores available to this user
   o$n_cores = detectCores()
@@ -145,7 +145,7 @@ set_options = function(do_step = NA) {
   # Turn figures on or off
   o$plot_inputs     = FALSE
   o$plot_static     = FALSE
-  o$plot_imputation = FALSE
+  o$plot_imputation = TRUE
   o$plot_impact     = FALSE
   o$plot_history    = TRUE
 

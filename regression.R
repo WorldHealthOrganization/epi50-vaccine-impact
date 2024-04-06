@@ -12,7 +12,7 @@
 # Parent function for regression modelling
 # ---------------------------------------------------------
 run_regression = function(case, metric) {
-  
+
   # Only continue if specified by do_step
   if (case == "impute" & !is.element(4, o$do_step)) return()
   if (case == "infer"  & !is.element(7, o$do_step)) return()
@@ -24,7 +24,7 @@ run_regression = function(case, metric) {
   # OPTIONS:
   #  basic_regression   - IA2030 method using GBD covariates
   #  perform_regression - Helen's time series regression, refactored code
-  method = "basic_regression"
+  method = "perform_regression"
   
   # TEMP: Ignoring problematic cases for now
   ignore = NULL 
@@ -107,6 +107,41 @@ run_regression = function(case, metric) {
   
   # Plot tornado plots of predictors by region
   # plot_tornado_region()
+}
+
+# ---------------------------------------------------------
+# Define initial regression models to evaluate inclusion of lagged vaccination coverage
+# ---------------------------------------------------------
+define_coverage_models = function(case) {
+  
+  # List of available covariates
+  covars = list(
+    cov0  = "log(coverage)",
+    cov1  = "log(coverage_minus_1)", 
+    cov2  = "log(coverage_minus_2)", 
+    cov3  = "log(coverage_minus_3)", 
+    cov4  = "log(coverage_minus_4)") 
+   
+  # Define models 
+  models = list(
+    
+    # Models for imputing missing countries
+    impute = list(
+      m1  = "cov0", 
+      m2  = "cov0 + cov1", 
+      m3  = "cov0 + cov1 + cov2", 
+      m4  = "cov0 + cov1 + cov2 + cov3", 
+      m5  = "cov0 + cov1 + cov2 + cov3 + cov4"), 
+    
+    # Models for inferring key drivers of impact 
+    infer = list(
+      m1  = "cov0", 
+      m2  = "cov0 + cov1", 
+      m3  = "cov0 + cov1 + cov2", 
+      m4  = "cov0 + cov1 + cov2 + cov3", 
+      m5  = "cov0 + cov1 + cov2 + cov3 + cov4")) 
+  
+  return(list(models[[case]], covars))
 }
 
 # ---------------------------------------------------------
@@ -393,10 +428,8 @@ basic_regression = function(d_v_a_id, target, case, metric) {
 # Perform regression
 # ---------------------------------------------------------
 perform_regression = function(d_v_a_id, target, case, metric) {
-  
+ 
   # Stepwise regression
-  # TODO: Update to lasso regularisation for optimal predictor selection
-  
   # Extract name of this d-v-a
   d_v_a_name = table("d_v_a") %>%
     filter(d_v_a_id == !!d_v_a_id) %>%
@@ -405,8 +438,14 @@ perform_regression = function(d_v_a_id, target, case, metric) {
   # Display progress message to user
   message(" > ", d_v_a_name)
   
+  # TODO Spearman rank here
+  
+  
+  # Evaluate lagged years of vaccination coverage
+  list[models, covars] = define_coverage_models(case)
+  
   # Load set of models to evaluate
-  list[models, covars] = define_models(case)
+  #list[models, covars] = define_models(case)
   
   # Append all required covariates - see separate function
   target_ts = append_covariates(d_v_a_id, models, covars, target)
@@ -423,7 +462,7 @@ perform_regression = function(d_v_a_id, target, case, metric) {
     group_by(country) %>%
     filter(n() >= o$min_data_requirement) %>% 
     ungroup()
-  
+  browser()
   # Evaluate all models in parallel
   if (o$parallel$impute)
     model_list = mclapply(

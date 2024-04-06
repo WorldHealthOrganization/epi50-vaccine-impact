@@ -1,7 +1,7 @@
 ###########################################################
 # COVARIATES
 #
-# Prepare covariates fron various sources for use in regression
+# Prepare covariates from various sources for use in regression
 # modelling. That is, for geographical imputation, and also
 # for inferring drivers of impact.
 #
@@ -151,24 +151,7 @@ covariates_unicef = function() {
            year   = as.integer(year), 
            metric = "stunting") %>%
     as.data.table()
-  
-  # ---- Maternal mortality ----
-  
-  # NOTE: Instead use Gapminder for maternal mortality
-  
-  # Read in UNICEF maternal mortality data
-  # covariates$maternal_mortality = 
-  #   fread(paste0(o$pth$input, "unicef_maternal_mortality.csv")) %>%
-  #   # Reduce down to values of interest...
-  #   select(country = iso, matches("^y[0-9]+")) %>%
-  #   filter(country %in% all_countries()) %>%
-  #   # Melt to long format...
-  #   pivot_longer(cols = -country,
-  #                names_to = "year") %>%
-  #   mutate(year   = as.integer(str_remove(year, "y")), 
-  #          metric = "maternal_mortality") %>%
-  #   as.data.table()
-  
+
   return(covariates)
 }
 

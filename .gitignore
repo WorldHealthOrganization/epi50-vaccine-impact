@@ -17,3 +17,6 @@ input/literacy_female.csv
 input/literacy_female_15_24.csv
 input/literacy_male.csv
 input/literacy_male_15_24.csv
+extern/template_measles.csv
+extern/template_polio_income.csv
+extern/template_polio_region.csv

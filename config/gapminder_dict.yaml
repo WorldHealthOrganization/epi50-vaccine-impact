@@ -18,12 +18,6 @@ table:
 - var: doctors_per_1000 
   file: "medical_doctors_per_1000_people"
 
-- var: underwt_children 
-  file: "underweight_children"
-
-- var: pop_0to14
-  file: "population_aged_0_14_years_both_sexes_percent"
-
 - var: pop_density 
   file: "population_density_per_square_km"
 
@@ -32,12 +26,6 @@ table:
 
 - var: rural_poverty
   file: "rural_poverty_percent_rural_people_below_national_rural"
-
-- var: hiv_prev
-  file: "adults_with_hiv_percent_age_15_49"
-
-- var: hiv_mortality
-  file: "annual_hiv_deaths_number_all_ages"
 
 - var: maternal_mortality
   file: "maternal_mortality_ratio_who"
@@ -54,11 +42,6 @@ table:
 - var: basic_water
   file: "at_least_basic_water_source_overall_access_percent"
 
-- var: hdi
-  file: "hdi_human_development_index"
-
 - var: attended_births
   file: "births_attended_by_skilled_health_staff_percent_of_total"
 
-# - var: internet_users
-#   file: "internet_users"
