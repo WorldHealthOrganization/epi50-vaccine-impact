@@ -73,10 +73,12 @@ packages = c(
   "lemon",          # Plotting functionality
   "ggridges",         # Plotting functionality
   "dotwhisker",     # Plotting functionality
-  "cowplot",     # Plotting functionality
+  "patchwork",     # Plotting functionality
   "pals",           # Colour palettes
   "colorspace",     # Colour palettes
   "progress",       # Progress bar
+  "ggtext",
+  "MCMCpack",
   "svglite")        # Figure saving
 
 # List of all packages only available from github

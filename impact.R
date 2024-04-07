@@ -24,7 +24,7 @@ run_impact = function(metric) {
   data_dt = get_impact_data(metric)
 
   # Exploratory plots of data used to fit impact functions
-  plot_impact_data(metric)
+ # plot_impact_data(metric)
 
   # Plot all-time impact per FVPs
   # plot_impact_fvps(metric, scope = "all_time")
@@ -32,7 +32,7 @@ run_impact = function(metric) {
   # ---- Model fitting ----
 
   message(" > Evaluating impact functions")
-  browser()
+
   # Country-disease-vaccine-activity combinations
   run_dt = data_dt %>%
     select(d_v_a_id, country) %>%
@@ -83,10 +83,10 @@ run_impact = function(metric) {
   # ---- Plot results ----
 
   # Plot function selection statistics
-  plot_model_selection(metric)
+ # plot_model_selection(metric)
 
   # Plot impact function evaluation
-  plot_model_fits(metric)
+  #plot_model_fits(metric)
   
   # Plot impact vs coverage by vaccine, income, and decade
   # plot_impact_coverage(metric)
@@ -167,10 +167,10 @@ fn_set = function(params = FALSE, dict = FALSE) {
 # Parent function to determine best fitting function
 # ---------------------------------------------------------
 get_best_model = function(id, run, data, pb) {
-  
+ 
   # Initiate trivial output
   result = NULL
-  browser()
+  
   # Details of this run
   this_run = run[run_id == id]
 
@@ -245,7 +245,7 @@ get_best_model = function(id, run, data, pb) {
   #   geom_point(
   #     data   = data_dt,
   #     colour = "black")
-  
+  #browser()
   return(result)
 }
 
@@ -515,7 +515,7 @@ model_selection = function(run_dt, metric) {
   message(" > Selecting best functions")
   
   # ---- Extract results ----
-  browser()
+ 
   # All d-v-a combinations considered
   d_v_a = unique(run_dt$d_v_a_id)
   

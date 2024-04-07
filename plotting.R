@@ -1269,7 +1269,7 @@ plot_static = function() {
 # Plot truth vs predicted for imputation training data
 # ---------------------------------------------------------
 plot_impute_quality = function(metric) {
- # browser()
+#browser()
   message("  - Plotting imputation quality of fit")
   
   # ---- Load results from fitting ----
@@ -1278,12 +1278,9 @@ plot_impute_quality = function(metric) {
   load_results_fn = function(id)
     result = read_rds("impute", "impute", metric, id)$result
   
- # ignore = 12
-  
   # Load imputation results for all d-v-a
   results_dt = table("d_v_a") %>%
     filter(source == "vimc") %>%
-   # filter(!d_v_a_id %in% ignore) %>% 
     pull(d_v_a_id) %>%
     lapply(load_results_fn) %>%
     rbindlist()
@@ -2557,7 +2554,7 @@ plot_historical_impact = function(region = NULL) {
     
     return(impact_dt)
   }
-  
+ # browser()
   # Load results and apply initial formatting
   impact_dt = lapply(metrics, load_fn) %>%
     rbindlist() %>%
@@ -2934,7 +2931,7 @@ plot_infant_mortality = function() {
     mutate(metric = "rate") %>%
     select(metric, scenario, year, value) %>%
     as.data.table()
-  
+ 
   # Cumulative number of deaths in each scenario
   deaths_dt = mortality$value %>%
     group_by(scenario) %>%

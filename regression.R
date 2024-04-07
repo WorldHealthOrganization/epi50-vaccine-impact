@@ -20,10 +20,7 @@ run_regression = function(case, metric) {
   message("* Running regression: ", case, " ", metric)
 
   # TEMP: Ignoring problematic cases for now
-  ignore = NULL
-  # c(12,  # Non-routine, small numbers
-#   11,   # Yellow fever
-#  16, 18, 22)  # DTP boosters causing problems
+  ignore = c(4:7, 12)#NULL
 
   # ---- Load data ----
   
@@ -116,8 +113,9 @@ define_models = function(case) {
     m402 = "cov0 + cov1 + cov2 + cov3 + mat + gini",
     m403 = "cov0 + cov1 + cov2 + cov3 + mat + gini + stunt",
     m404 = "cov0 + cov1 + cov2 + cov3 + mat + gini + stunt + phs",
-    m405 = "cov0 + cov1 + cov2 + cov3 + mat + gini + stunt + dens",
-    m406 = "cov0 + cov1 + cov2 + cov3 + mat + gini + stunt + wat"))
+    m405 = "cov0 + cov1 + cov2 + cov3 + mat + gini + stunt + wat",
+    
+    m500 = "cov0 + cov1 + cov2 + cov3 + mat + gini + stunt + wat + phs + wat"))
   
 return(list(models[[case]], covars))
   
@@ -487,6 +485,11 @@ evaluate_predictions = function(model_choice, model_list, target, case, income_d
    # Full set of models available - we'll subset for this modal ID
   list[models, covars] = define_models(case)
 
+# Evaluate models on the training data
+predict_dt = augment(model_choice) %>%
+  select(country, year, prediction = .fitted) %>%
+  as.data.table()
+
   # Function to find mode
   mode <- function(x) {
     ux = unique(x[!is.na(x)])
@@ -559,7 +562,9 @@ evaluate_predictions = function(model_choice, model_list, target, case, income_d
       names_glue  = "{term}_coefficient",
       values_from = estimate) %>%
     as.data.table() %>%
-    rbind(impute_choice_dt)
+    suppressWarnings() %>%
+    rbind(impute_choice_dt) %>%
+    replace(is.na(.), 0)
   
   # ---- Construct predictor function call ----
   
@@ -568,35 +573,37 @@ evaluate_predictions = function(model_choice, model_list, target, case, income_d
     paste0(q, x, q)
   
   # Column names of predictors
-  predict_covars = models %>% #[[id]] %>%
+  predict_covars = models %>%
     interpret_covars(covars) %>%
     str_remove_all(" ") %>%
     str_split("\\+") %>%
-    pluck(1)
+    pluck(11) 
   
   # Construct linear product of predictors and coefficients
   predict_str = predict_covars %>%
     paste1("coefficient") %>%
     quote("`") %>%
     paste(predict_covars, sep = " * ") %>%
-    paste(collapse = " + ")
+    paste(collapse = " + ") 
   
   # Construct complete function call to be evaluated
-  predict_fn   = paste0("prediction = exp(", predict_str, ")")
+  predict_fn   = paste0("prediction = exp(", predict_str, "+ `(Intercept)_coefficient`",")")
   predict_eval = paste0("predictors %>% mutate(", predict_fn, ")")
-  
+ # browser()
   # Append coefficients to predictors
-  predictors = target %>% 
+  predictors = target %>%
     left_join(y = income_dt,
               by = "country") %>%
     left_join(y  = full_coefficient_dt, 
               by = "country") %>% 
-    as.data.table()
-  
+    replace(is.na(.), 0) %>%
+   as.data.table()
+ 
   # Evaluate function call to predict all target values
   predict_dt = eval_str(predict_eval) %>%
-    select(country, year, prediction)
-  
+    select(country, year, prediction) %>%
+    filter(prediction <= 1e-3)
+
   return(predict_dt)
 }
 
