@@ -24,9 +24,6 @@ table:
 - var: urban_percent
   file: "urban_population_percent_of_total"
 
-- var: rural_poverty
-  file: "rural_poverty_percent_rural_people_below_national_rural"
-
 - var: maternal_mortality
   file: "maternal_mortality_ratio_who"
 

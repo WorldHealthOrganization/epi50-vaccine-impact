@@ -21,7 +21,7 @@ prepare_covariates = function() {
   c1 = covariates_gapminder()
   c2 = covariates_unicef()
   c3 = covariates_gbd()
-  
+ 
   # Concatenate and interpolate
   covariates_dt = c(c1, c2, c3) %>%
     # Expand to temporal scope and interpolate trends...
@@ -112,6 +112,10 @@ covariates_gapminder = function() {
     mutate(year = as.integer(time)) %>%
     filter(year >= min(o$years) - 10, 
            year <= max(o$years)) %>%
+    # Normalise
+    group_by(metric) %>%
+    mutate(value = value / max(value)) %>%
+    ungroup(metric) %>%
     # Tidy up...
     select(country, year, value, metric) %>%
     split(f = .$metric)
@@ -148,6 +152,7 @@ covariates_unicef = function() {
     filter(!is.na(value)) %>% 
     # Format values...
     mutate(value  = as.numeric(value), 
+           value = value / max(value),
            year   = as.integer(year), 
            metric = "stunting") %>%
     as.data.table()

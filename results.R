@@ -66,20 +66,25 @@ run_results = function() {
     
     # Repeat for deaths and DALYs
     for (metric in o$metrics) {
-      
-      browser() # Figures need to be updated to handle metric...
-      
+     
       # Plot model choice by region
       plot_model_choice(metric)
       
       # Plot predictor and response relationships
-      plot_covariates(metric)
+     # plot_covariates(metric)
       
-      # Plot imputation quality of fit
+      # Plot predicted vs. observed for all countries
       plot_impute_quality(metric)
       
-      # Plot train-predict countries
-      plot_impute_countries(metric)
+      # Plot predicted vs. observed for each country
+      plot_impute_perform(metric)
+      
+      # Plot fit to data in train-predict countries
+      plot_impute_fit(metric)
+      
+      # Plot validation
+      #plot_validation(metric)
+      
     }
   }
   

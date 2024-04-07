@@ -147,7 +147,7 @@ set_options = function(do_step = NA) {
   o$plot_static     = FALSE
   o$plot_imputation = TRUE
   o$plot_impact     = FALSE
-  o$plot_history    = TRUE
+  o$plot_history    = FALSE
 
   # ---- Plotting settings ----
 
