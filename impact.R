@@ -32,7 +32,7 @@ run_impact = function(metric) {
   # ---- Model fitting ----
 
   message(" > Evaluating impact functions")
-  
+  browser()
   # Country-disease-vaccine-activity combinations
   run_dt = data_dt %>%
     select(d_v_a_id, country) %>%
@@ -170,7 +170,7 @@ get_best_model = function(id, run, data, pb) {
   
   # Initiate trivial output
   result = NULL
-  
+  browser()
   # Details of this run
   this_run = run[run_id == id]
 
@@ -515,7 +515,7 @@ model_selection = function(run_dt, metric) {
   message(" > Selecting best functions")
   
   # ---- Extract results ----
-  
+  browser()
   # All d-v-a combinations considered
   d_v_a = unique(run_dt$d_v_a_id)
   

@@ -20,10 +20,10 @@ prepare_covariates = function() {
   # Format all covariates from the various sources
   c1 = covariates_gapminder()
   c2 = covariates_unicef()
-  c3 = covariates_gbd()
+  
  
   # Concatenate and interpolate
-  covariates_dt = c(c1, c2, c3) %>%
+  covariates_dt = c(c1, c2) %>%
     # Expand to temporal scope and interpolate trends...
     interpolate_covariates() %>%
     rbindlist() %>%
@@ -157,74 +157,6 @@ covariates_unicef = function() {
            metric = "stunting") %>%
     as.data.table()
 
-  return(covariates)
-}
-
-# ---------------------------------------------------------
-# Prepare covariates from Global Burden of Disease
-# ---------------------------------------------------------
-covariates_gbd = function() {
-  
-  # Initiate covariates list
-  covariates = list()
-  
-  # ---- Health and quality index ----
-  
-  # Prepare GBD 2019 HAQI for use as a covariate
-  covariates$haqi = 
-    fread(paste0(o$pth$input, "gbd19_haqi.csv")) %>%
-    # Countries of interest...
-    rename(country_name = location_name) %>%
-    inner_join(y  = table("country"),
-               by = "country_name") %>%
-    # Tidy up...
-    select(country, year = year_id, value = val) %>%
-    mutate(value  = value / 100, 
-           metric = "haqi") %>%
-    arrange(country, year)
-  
-  # ---- Socio-demographic index ----
-  
-  # Function to load each SDI file
-  load_sdi = function(name) {
-    
-    # Full file name
-    file = paste0(o$pth$input, name, ".csv")
-    
-    # Load and convert to long form to allow binding
-    sdi_dt = fread(file, header = TRUE) %>%
-      rename(gbd_alt_name = Location) %>%
-      pivot_longer(cols = -gbd_alt_name,
-                   names_to  = "year") %>%
-      as.data.table()
-    
-    return(sdi_dt)
-  }
-  
-  # GBD country names
-  gbd_name_dt = table("country") %>%
-    mutate(gbd_alt_name = ifelse(
-      test = is.na(gbd_alt_name), 
-      yes  = country_name, 
-      no   = gbd_alt_name)) %>%
-    select(country, gbd_alt_name)
-  
-  # Prepare GBD 2019 SDI for use as a covariate
-  covariates$sdi = 
-    rbind(load_sdi("gbd19_sdi_1970"), 
-          load_sdi("gbd19_sdi_1990")) %>%
-    # Countries of interest...
-    inner_join(y  = gbd_name_dt,
-               by = "gbd_alt_name") %>%
-    # Years of interest...
-    mutate(year = as.integer(year)) %>%
-    filter(year %in% o$years) %>%
-    # Tidy up...
-    select(country, year, value) %>%
-    mutate(metric = "sdi") %>%
-    arrange(country, year) %>%
-    as.data.table()
-  
   return(covariates)
 }
 

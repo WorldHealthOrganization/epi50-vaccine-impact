@@ -18,14 +18,7 @@ run_regression = function(case, metric) {
   if (case == "infer"  & !is.element(7, o$do_step)) return()
   
   message("* Running regression: ", case, " ", metric)
-  
-  # TEMP: Use basic or full imputation method
-  #
-  # OPTIONS:
-  #  basic_regression   - IA2030 method using GBD covariates
-  #  perform_regression - Helen's time series regression, refactored code
-  method = "perform_regression"
-  
+
   # TEMP: Ignoring problematic cases for now
   ignore = NULL
   # c(12,  # Non-routine, small numbers
@@ -54,7 +47,7 @@ run_regression = function(case, metric) {
     filter(!d_v_a_id %in% ignore) %>%  
     # Apply geographical imputation model...
     pull(d_v_a_id) %>%
-    lapply(FUN = get(method), 
+    lapply(perform_regression, 
            target = target, 
            case   = case, 
            metric = metric) %>%
@@ -89,41 +82,6 @@ run_regression = function(case, metric) {
 }
 
 # ---------------------------------------------------------
-# Define initial regression models to evaluate inclusion of lagged vaccination coverage
-# ---------------------------------------------------------
-define_coverage_models = function(case) {
-  
-  # List of available covariates
-  covars = list(
-    cov0  = "log(coverage)",
-    cov1  = "log(coverage_minus_1)", 
-    cov2  = "log(coverage_minus_2)", 
-    cov3  = "log(coverage_minus_3)", 
-    cov4  = "log(coverage_minus_4)") 
-   
-  # Define models 
-  models = list(
-    
-    # Models for imputing missing countries
-    impute = list(
-      m1  = "cov0", 
-      m2  = "cov0 + cov1", 
-      m3  = "cov0 + cov1 + cov2", 
-      m4  = "cov0 + cov1 + cov2 + cov3", 
-      m5  = "cov0 + cov1 + cov2 + cov3 + cov4"), 
-    
-    # Models for inferring key drivers of impact 
-    infer = list(
-      m1  = "cov0", 
-      m2  = "cov0 + cov1", 
-      m3  = "cov0 + cov1 + cov2", 
-      m4  = "cov0 + cov1 + cov2 + cov3", 
-      m5  = "cov0 + cov1 + cov2 + cov3 + cov4")) 
-  
-  return(list(models[[case]], covars))
-}
-
-# ---------------------------------------------------------
 # Define set of regression models to evaluate
 # ---------------------------------------------------------
 define_models = function(case) {
@@ -136,162 +94,17 @@ define_models = function(case) {
     cov3  = "log(coverage_minus_3)", 
     cov4  = "log(coverage_minus_4)", 
     gini  = "gini", 
-    gdp   = "gdp",
-    lit_f = "lit_female", 
-    lit_m = "lit_male",
-    doc   = "doctors_per_1000",
     dens  = "pop_density",
     urban = "urban_percent",
     mat   = "maternal_mortality",
     stunt = "stunting",
     phs   = "private_health",
-    san   = "basic_sanitation",
-    wat   = "basic_water",
-    ab    = "attended_births", 
-    hs   = "health_spending", 
-    hs1   = "health_spending_minus_1", 
-    hs2   = "health_spending_minus_2")
+    wat   = "basic_water")
   
- # if(phase == 1){
+ 
   # Define models (using shorthand covariate references)
-#  models = list(
-    
-    # Models for imputing missing countries
- #   impute = list(
-#      m1  = "cov0 + cov1 + cov2 + cov3 + cov4",
-#      m2  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini",
-#      m3  = "cov0 + cov1 + cov2 + cov3 + cov4 + gdp",
-#      m4  = "cov0 + cov1 + cov2 + cov3 + cov4 + lit_f",
-#      m5  = "cov0 + cov1 + cov2 + cov3 + cov4 + lit_m",
-#      m6  = "cov0 + cov1 + cov2 + cov3 + cov4 + doc",
-#      m7  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens",
-#      m8  = "cov0 + cov1 + cov2 + cov3 + cov4 + urban",
-#      m9  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt",
-#      m10  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat",
-#      m11  = "cov0 + cov1 + cov2 + cov3 + cov4 + phs",
-#      m12  = "cov0 + cov1 + cov2 + cov3 + cov4 + san",
-#      m13  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat",
-#      m14  = "cov0 + cov1 + cov2 + cov3 + cov4 + ab",
-#      m15  = "cov0 + cov1 + cov2 + cov3 + cov4 + hs"))
-      
- #     return(list(models[[case]], covars))
-#  }
-      
-#  if(phase == 2){
-    # Define models (using shorthand covariate references)
-   # models = list(
-      # Models for imputing missing countries
-    #  impute = list(
-     # m16 = "cov0 + cov1 + cov2 + cov3 + cov4 + gini",
-  #    m17  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + gdp",
-  #    m18  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + lit_f",
-  #    m19  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + lit_m",
-  #    m20  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + doc",
-    #  m21  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + dens",
-  #    m22 = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + urban",
-     # m23 = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + stunt",
-    #  m24  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + mat",
-  #    m25  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + phs",
-  #    m26  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + san",
-     # m27  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + wat",
-  #    m28  = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + ab",
-    #  m29 = "cov0 + cov1 + cov2 + cov3 + cov4 + gini + hs",
-      
-  #    m30  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + gdp",
-  #    m31  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + lit_f",
-  #    m32  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + lit_m",
-  #    m33  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + doc",
-  #    m34  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + urban",
-     # m35  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + stunt",
-    #  m36  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + mat",
-  #    m37  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + phs",
-  #    m38  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + san",
-     # m39  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + wat",
-  #    m40  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + ab",
-      #m41  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens + hs",
-  #    
-  #    m42  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + gdp",
- #     m43  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + lit_f",
-#      m44  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + lit_m",
-  #    m45  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + doc",
-  #    m46  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + urban",
-      #m47  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + mat",
-  #    m48  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + phs",
-  #    m49  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + san",
-      #m50  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + wat",
-  #    m51  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + ab",
-      #m52  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt + hs",
-
-  #    m53  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat + gdp",
-  #    m54  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat + lit_f",
-  #    m55  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat + lit_m",
-  #    m56  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat + doc",
-  #    m57  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat + urban",
-  #    m58  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat + phs",
-  #    m59  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat + san",
-      #m60  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat + wat",
-  #    m61  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat + ab",
-      #m62  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat + hs",
-      
-  #    m63  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat + gdp",
-  #    m64  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat + lit_f",
-   #   m65  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat + lit_m",
-  #    m66  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat + doc",
-  #    m67  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat + urban",
-  #    m68  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat + phs",
-  #    m69  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat + san",
-  #    m70  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat + ab",
-      #m71  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat + hs",
-  #   
-    # Models for inferring key drivers of impact 
-    #infer = list(
-    #  x1  = "cov0", 
-    #  x8  = "cov0 + cov1 + cov2 + cov3 + cov4 + pop14 + gini + ab", 
-    #  x13 = "cov0 + hdi + pop14 + gini"))
-  
- # return(list(models[[case]], covars))}
-  
-  #if(phase == 3){
-    # Define models (using shorthand covariate references)
-   # models = list(
-      # Models for imputing missing countries
-      #impute = list(
-       # m301 = "cov0 + cov1 + cov2 + cov3 + cov4 + gini",
-      #  m302 = "cov0 + cov1 + cov2 + cov3 + gini",
-      #  m303 = "cov0 + cov1 + cov2 + gini",
-      #  m304 = "cov0 + cov1 + gini",
-      #  m305 = "cov0 + gini",
-        
-       # m306  = "cov0 + cov1 + cov2 + cov3 + cov4 + dens",
-      #  m307  = "cov0 + cov1 + cov2 + cov3 + dens",
-      #  m308  = "cov0 + cov1 + cov2 + dens",
-      #  m309  = "cov0 + cov1 + dens",
-      #  m310  = "cov0 + dens",
-        
-       # m311  = "cov0 + cov1 + cov2 + cov3 + cov4 + stunt",
-      #  m312  = "cov0 + cov1 + cov2 + cov3 + stunt",
-      #  m313  = "cov0 + cov1 + cov2 + stunt",
-      #  m314  = "cov0 + cov1 + stunt",
-      #  m315  = "cov0 + stunt",
-       
-       # m316  = "cov0 + cov1 + cov2 + cov3 + cov4 + mat",
-      #  m317  = "cov0 + cov1 + cov2 + cov3 + mat",
-      #  m318  = "cov0 + cov1 + cov2 + mat",
-      #  m319  = "cov0 + cov1 + mat",
-      #  m320  = "cov0 + mat",
-      # 
-       # m321  = "cov0 + cov1 + cov2 + cov3 + cov4 + wat",
-      #  m322  = "cov0 + cov1 + cov2 + cov3 + wat",
-      #  m323  = "cov0 + cov1 + cov2 + wat",
-      #  m324  = "cov0 + cov1 + wat",
-      #  m325  = "cov0 + wat"))
-       
-    #return(list(models[[case]], covars))
-    
-    #if(phase == 4){
-    # Define models (using shorthand covariate references)
-     models = list(
-    # Models for imputing missing countries
+    models = list(
+  # Models for imputing missing countries
     impute = list(
       m1  = "cov0", 
       m2  = "cov0 + cov1", 
@@ -333,7 +146,6 @@ get_regression_data = function(case, metric) {
   if (case == "infer")
     outcomes_dt = read_rds("history", metric, "averted")
   
-  # TODO: Probably best to remove previously imputed estimates in the infer case
   
   # Convert estimates to cumulative form
   impact_dt = outcomes_dt %>%
@@ -391,155 +203,6 @@ get_regression_data = function(case, metric) {
     warning("No training data identified")
   
   return(target_dt)
-}
-
-# ---------------------------------------------------------
-# Perform regression (IA2030 style approach)
-# ---------------------------------------------------------
-basic_regression = function(d_v_a_id, target, case, metric) {
-  
-  # Details of this d_v_a
-  d_v_a_name = data.table(d_v_a_id = d_v_a_id) %>%
-    format_d_v_a_name() %>%
-    pull(d_v_a_name)
-  
-  # Display progress message to user
-  message(" > ", d_v_a_name)
-  
-  # ---- Append covariates ----
-  
-  # All-cause death rate by country, year, and age
-  infant_mortality_dt = table("wpp_pop") %>%
-    filter(age == 0) %>%  # TODO: Instead filter by table("wiise_vaccine") age group
-    inner_join(y  = table("wpp_deaths"),
-               by = c("country", "year", "age")) %>%
-    # Calculate infant mortality rate...
-    mutate(imr = deaths / pop) %>%
-    select(country, year, imr)
-  
-  # Compile datatable of covariates
-  covariates_dt = table("regression_covariates") %>%
-    filter(metric %in% c("haqi", "sdi")) %>%
-    pivot_wider(names_from = metric) %>%
-    full_join(y  = infant_mortality_dt, 
-              by = c("country", "year")) %>%
-    arrange(country, year) %>%
-    group_by(country) %>%
-    fill(haqi, .direction = "up") %>%
-    ungroup() %>%
-    as.data.table()
-  
-  # Append covariates to target
-  target_dt = target %>%
-    filter(d_v_a_id == !!d_v_a_id) %>%
-    # Append GBD indices and infant mortality...
-    left_join(y  = covariates_dt,
-              by = c("country", "year")) %>%
-    # Calculate n years of estimates...
-    mutate(n_years = 1) %>%
-    group_by(country) %>%
-    mutate(n_years = cumsum(n_years)) %>%
-    ungroup() %>%
-    as.data.table()
-  
-  # TODO: We can either include or exclude zero here - arguably with zero is better...
-  
-  # Data used to fit statistical model
-  data_dt = target_dt %>%
-    filter(!is.na(target)) %>%
-    # filter(target > 0) %>%
-    select(target, n_years, sdi, haqi, imr) %>%
-    # Remove target outliers for better normalisation...
-    mutate(lower = mean(target) - 3 * sd(target), 
-           upper = mean(target) + 3 * sd(target), 
-           outlier = target < lower | target > upper) %>%
-    filter(outlier == FALSE) %>%
-    select(-outlier, -lower, -upper)
-  
-  # Sanity check that we have no NAs here
-  if (any(is.na(data_dt)))
-    stop("NA values identified in predictors")
-  
-  # Values to predict for (including data used for fitting)
-  pred_dt = target_dt %>%
-    select(all_names(data_dt))
-  
-  # ---- Check for trivial case ----
-  
-  # Return out if no data available
-  if (nrow(data_dt[target > 0]) < 10) {
-    
-    message(" !! Insufficient data for imputation !!")
-    
-    # Store trivial outcomes
-    fit = list(data = data_dt, result = NULL)
-    
-    # Save to file
-    save_rds(fit, "impute", "impute", metric, d_v_a_id)
-    
-    return()
-  }
-  
-  # ---- Normalise predictors and response ----
-  
-  # Function to normalise ready for fitting
-  transform_fn = function(x, a, b)
-    y = t((x - a) / (b - a)) %>% as.data.table()
-  
-  # Function to back transform to original scale
-  retransform_fn = function(y, a, b)
-    x = y * (b["target"] - a["target"]) + a["target"]
-  
-  # Matrices of points to fit with and points to predict for
-  data_mat = t(as.matrix(data_dt))
-  pred_mat = t(as.matrix(pred_dt))
-  
-  # Min and max in data used for fitting
-  a = rowMins(data_mat)
-  b = rowMaxs(data_mat)
-  
-  # Use these min ana max values to normalise
-  norm_data_dt = transform_fn(data_mat, a, b)
-  norm_pred_dt = transform_fn(pred_mat, a, b)
-  
-  # ---- Fit a model to predict impact per FVP ----
-  
-  # Fit a GLM for impact per FVP using all covariates
-  fit_model = glm(
-    formula = target ~ n_years + sdi + haqi + imr, 
-    data    = norm_data_dt)
-  
-  # Use fitted model to predict 
-  result_dt = target_dt %>%
-    select(country, d_v_a_id, year, fvps_cum, impact_cum) %>%
-    # Predict impact per FVP...
-    cbind(norm_pred_dt) %>%
-    mutate(predict = predict(fit_model, .), 
-           predict = pmax(predict, 0)) %>%
-    # Remove predictors...
-    select(country, d_v_a_id, year, fvps_cum, impact_cum, 
-           target, predict) %>%
-    # Back-transform target and prediction...
-    mutate(target  = retransform_fn(target,  a, b), 
-           predict = retransform_fn(predict, a, b)) %>%
-    # Multiply through to obtain cumulative impact over time...
-    mutate(impact_impute = fvps_cum * predict, 
-           .after = impact_cum)
-  
-  # Sanity check that all predicted values are legitimate
-  if (any(is.na(result_dt$predict)))
-    stop("NA values identified in predicted impact")
-  
-  # Store the fitted model, the data used, and the result
-  fit = list(
-    model   = fit_model, 
-    data    = norm_data_dt, 
-    result  = result_dt)
-  
-  # Save to file
-  save_rds(fit, case, case, metric, d_v_a_id)
-  
-  return(result_dt)
 }
 
 # ---------------------------------------------------------
@@ -654,7 +317,7 @@ perform_regression = function(d_v_a_id, target, case, metric) {
       model_list = model_list, 
       target     = target_ts, 
       case       = case,
-      income_dt     = income_dt)
+      income_dt  = income_dt)
   }
   
   # Infer case: just a case of evaluating on the training data

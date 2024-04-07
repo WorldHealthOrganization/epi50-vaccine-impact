@@ -76,6 +76,7 @@ packages = c(
   "cowplot",     # Plotting functionality
   "pals",           # Colour palettes
   "colorspace",     # Colour palettes
+  "progress",       # Progress bar
   "svglite")        # Figure saving
 
 # List of all packages only available from github

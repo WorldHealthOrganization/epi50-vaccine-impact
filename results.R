@@ -69,10 +69,7 @@ run_results = function() {
      
       # Plot model choice by region
       plot_model_choice(metric)
-      
-      # Plot predictor and response relationships
-     # plot_covariates(metric)
-      
+     
       # Plot predicted vs. observed for all countries
       plot_impute_quality(metric)
       
